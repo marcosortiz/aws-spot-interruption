@@ -13,7 +13,7 @@ end
 
 
 while true do
-    @logger.info('Doing some work ...')
+    @logger.info('No termination notice detected.')
     now = Time.now
     resp =  Net::HTTP.get(URI('http://169.254.169.254/latest/meta-data/spot/termination-time'))
     t = Time.parse(resp) rescue nil
@@ -22,7 +22,7 @@ while true do
         sleep(5)
     else
         @logger.info "This instance will be terminated at #{t}."
-        @logger.info "I have #{t-now} to save my state and stop any activity."
+        @logger.info "I have #{t-now} seconds to save my state and stop any activity."
         break
     end
 end
