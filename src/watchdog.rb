@@ -2,14 +2,23 @@
 
 require 'logger'
 require 'net/http'
+require 'socket'
 require 'time'
 
-LOG_FILE = '/home/ssm-user/spot-demo.log'
+LOG_FILE = '/home/ssm-user/watchdog.log'
+STOP_MSG = 'stop'
+PORT = 8124
 @logger = Logger.new(LOG_FILE)
 @logger.formatter = proc do |severity, datetime, progname, msg|
     "#{datetime.strftime('%Y-%m-%dT%H:%M:%S.%6N')} #{severity} #{msg}\n"
 end
 
+def send_stop_msg(ip, port)
+    TCPSocket.open(ip, port) {|s|
+        s.send "stop", 0
+        resp = s.recv(2)
+    }
+end
 
 
 while true do
@@ -27,4 +36,5 @@ while true do
     end
 end
 
+send_stop_msg('localhost', PORT)
 @logger.info "Done saving state. Stopping now. Bye."
