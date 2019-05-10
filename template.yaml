@@ -1,0 +1,165 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Resources: 
+    HandleSpotNotification:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: ./src
+            Handler: lambda/handle_spot_notification.lambda_handler
+            Runtime: ruby2.5
+            Events:
+                SpotInterruption:
+                    Type: CloudWatchEvent
+                    Properties:
+                        Pattern:
+                            source:
+                              - aws.ec2
+                            detail-type:
+                              - EC2 Spot Instance Interruption Warning
+            Policies:
+                - AWSLambdaExecute # Managed Policy
+    SpotWorkloadsTable:
+        Type: AWS::Serverless::SimpleTable
+        Properties:
+            PrimaryKey:
+                Name: id
+                Type: String
+    VPC:
+        Type: AWS::EC2::VPC
+        Properties:
+            CidrBlock: 10.0.0.0/16
+            EnableDnsHostnames: True
+            EnableDnsSupport: True
+            Tags:
+                - Key: Name
+                  Value: spot-demo-vpc
+    PrivateSubnet1:
+        Type: AWS::EC2::Subnet
+        Properties : 
+            CidrBlock : 10.0.0.0/24
+            MapPublicIpOnLaunch : False
+            AvailabilityZone:
+              Fn::Select: 
+                - 0
+                - Fn::GetAZs: ""
+            Tags:
+                - Key: Name
+                  Value: spot-demo-vpc-private1
+            VpcId : !Ref VPC
+    PrivateSubnet2:
+        Type: AWS::EC2::Subnet
+        Properties : 
+            CidrBlock : 10.0.1.0/24
+            MapPublicIpOnLaunch : False
+            AvailabilityZone:
+              Fn::Select: 
+                - 1
+                - Fn::GetAZs: ""
+            Tags:
+                - Key: Name
+                  Value: spot-demo-vpc-private2
+            VpcId : !Ref VPC
+    PrivateSubnet3:
+        Type: AWS::EC2::Subnet
+        Properties : 
+            CidrBlock : 10.0.2.0/24
+            MapPublicIpOnLaunch : False
+            AvailabilityZone:
+              Fn::Select: 
+                - 2
+                - Fn::GetAZs: ""
+            Tags:
+                - Key: Name
+                  Value: spot-demo-vpc-private3
+            VpcId : !Ref VPC
+    Ec2Vpcndpoint:
+        Type: AWS::EC2::VPCEndpoint
+        Properties : 
+            PrivateDnsEnabled : True
+            ServiceName: !Sub 'com.amazonaws.${AWS::Region}.ec2'
+            SubnetIds : 
+                - !Ref PrivateSubnet1
+                - !Ref PrivateSubnet2
+                - !Ref PrivateSubnet3
+            VpcEndpointType : Interface
+            VpcId : !Ref VPC
+    Ec2MessagesVpcndpoint:
+        Type: AWS::EC2::VPCEndpoint
+        Properties : 
+            PrivateDnsEnabled : True
+            ServiceName : !Sub 'com.amazonaws.${AWS::Region}.ec2messages'
+            SubnetIds : 
+                - !Ref PrivateSubnet1
+                - !Ref PrivateSubnet2
+                - !Ref PrivateSubnet3
+            VpcEndpointType : Interface
+            VpcId : !Ref VPC
+    SsmVpcndpoint:
+        Type: AWS::EC2::VPCEndpoint
+        Properties : 
+            PrivateDnsEnabled : True
+            ServiceName : !Sub 'com.amazonaws.${AWS::Region}.ssm'
+            SubnetIds : 
+                - !Ref PrivateSubnet1
+                - !Ref PrivateSubnet2
+                - !Ref PrivateSubnet3
+            VpcEndpointType : Interface
+            VpcId : !Ref VPC
+    SsmMessagesVpcndpoint:
+        Type: AWS::EC2::VPCEndpoint
+        Properties : 
+            PrivateDnsEnabled : True
+            ServiceName : !Sub 'com.amazonaws.${AWS::Region}.ssmmessages'
+            SubnetIds : 
+                - !Ref PrivateSubnet1
+                - !Ref PrivateSubnet2
+                - !Ref PrivateSubnet3
+            VpcEndpointType : Interface
+            VpcId : !Ref VPC
+    LogsVpcndpoint:
+        Type: AWS::EC2::VPCEndpoint
+        Properties : 
+            PrivateDnsEnabled : True
+            ServiceName : !Sub 'com.amazonaws.${AWS::Region}.logs'
+            SubnetIds : 
+                - !Ref PrivateSubnet1
+                - !Ref PrivateSubnet2
+                - !Ref PrivateSubnet3
+            VpcEndpointType : Interface
+            VpcId : !Ref VPC
+    Ec2SsmRole:
+        Type: AWS::IAM::Role
+        Properties : 
+            AssumeRolePolicyDocument: 
+                Version: "2012-10-17"
+                Statement: 
+                    - 
+                      Effect: "Allow"
+                      Principal: 
+                        Service: 
+                          - "ec2.amazonaws.com"
+                      Action: 
+                        - "sts:AssumeRole"
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+    Ec2SsmInstanceProfile:
+        Type: AWS::IAM::InstanceProfile
+        Properties : 
+            # InstanceProfileName : SpotDemoEc2SsmInstanceProfile
+            Roles : 
+                - !Ref Ec2SsmRole
+
+Outputs:
+    HandleSpotNotification:
+        Description: HandleSpotNotification function ARN
+        Value: !GetAtt HandleSpotNotification.Arn
+    SpotWorkloadsTable:
+        Description: SpotWorkloadsTable function ARN
+        Value: !GetAtt SpotWorkloadsTable.Arn
+    VPC:
+        Description: VPC where the spot instances will run on
+        Value: !Ref VPC
+    Ec2SsmInstanceProfile:
+        Description: Instance profile that will be used with the EC2 spot instances
+        Value: !Ref Ec2SsmInstanceProfile

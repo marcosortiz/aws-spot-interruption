@@ -1,24 +1,23 @@
 #!/bin/bash
 
-su - ssm-user
-
 # update packages
-sudo yum update -y
+yum update -y
 
 # Install git
-sudo yum install -y git
+yum install -y git
 
 # installing ruby 2.4
-sudo amazon-linux-extras install -y ruby2.4
+amazon-linux-extras install -y ruby2.4
 
-runuser -l  ssm-user -c 'cd'
+cd /home/ssm-user
 runuser -l  ssm-user -c 'curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.32.0/install.sh | bash'
-runuser -l  ssm-user -c 'export NVM_DIR="$HOME/.nvm"'
-runuser -l  ssm-user -c '. cd /home/ssm-user/.nvm/nvm.sh'
+runuser -l  ssm-user -c 'export NVM_DIR="/home/ssm-user/.nvm"'
+runuser -l  ssm-user -c '. /home/ssm-user/.nvm/nvm.sh'
+runuser -l  ssm-user -c 'source /home/ssm-user/.bashrc'
 runuser -l  ssm-user -c 'nvm install v8.10.0'
 
 # Installing awslogs agent
-sudo yum install -y awslogs
+yum install -y awslogs
 cat << EOL | sudo tee /etc/awslogs/awslogs.conf
 [general]
 # Path to the CloudWatch Logs agent's state file. The agent uses this file to maintain
@@ -43,7 +42,7 @@ log_group_name = spot-demo-app
 EOL
 sudo systemctl start awslogsd
 
-cd
+cd /home/ssm-user
 cat << EOL | tee /home/ssm-user/watchdog.rb
 # /usr/bin/ruby
 
@@ -88,9 +87,8 @@ send_stop_msg('localhost', PORT)
 EOL
 chown ssm-user watchdog.rb 
 chgrp ssm-user watchdog.rb 
-# cd
-# nohup ruby ./watchdog.rb > /dev/null 2>&1 &
-runuser -l  ssm-user -c 'cd'
+
+runuser -l  ssm-user -c 'cd /home/ssm-user'
 runuser -l  ssm-user -c 'nohup ruby ./watchdog.rb > /dev/null 2>&1 &'
 
 cat << EOL | tee /home/ssm-user/app.js
@@ -147,7 +145,5 @@ server.listen(PORT, () => {
 EOL
 chown ssm-user app.js
 chgrp ssm-user app.js
-# cd
-# nohup node ./app.js > ./app.log 2>&1 &
-runuser -l  ssm-user -c 'cd'
+runuser -l  ssm-user -c 'cd /home/ssm-user'
 runuser -l  ssm-user -c 'nohup node ./app.js > ./app.log 2>&1 &'
