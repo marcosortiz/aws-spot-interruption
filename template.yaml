@@ -1,6 +1,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 
+Parameters:
+    Username:
+        Type: String
+        Default: ormarcos@amazon.com
+        Description: A valid email address is required
+
+
 Resources: 
     HandleSpotNotification:
         Type: AWS::Serverless::Function
@@ -25,6 +32,58 @@ Resources:
             PrimaryKey:
                 Name: id
                 Type: String
+    SpotDemoUserPool:
+        Type: "AWS::Cognito::UserPool"
+        Properties:
+            AutoVerifiedAttributes:
+                - email
+            MfaConfiguration: 'OFF'
+            Schema:
+                - 
+                    AttributeDataType: String
+                    Name: email
+                    Required: true
+            AdminCreateUserConfig: 
+                AllowAdminCreateUserOnly: true
+                InviteMessageTemplate:
+                    EmailMessage:
+                        Fn::Sub: |
+                            <p>You are invited to join AWS Spot Instances Demo App. Your temporary password is as follows:</p>
+                            <p>
+                            username: {username} <br />
+                            Password: <strong>{####}</strong>
+                            </p>
+                            <p>
+                            Please sign in to the GUI with your username and temporary password provided above.
+                            </p>
+                    EmailSubject: Your temporary password for AWS Spot Instance Demo App
+            EmailVerificationMessage: "Your AWS Spot Instance Demo App verification code is {####}."
+            UsernameAttributes:
+                - email
+    # UserPoolUser:
+    #     Type: AWS::Cognito::UserPoolUser
+    #     Properties:
+    #         DesiredDeliveryMediums: 
+    #             - EMAIL
+    #         UserAttributes: 
+    #             - Name: email
+    #               Value: !Ref Username
+    #         Username: !Ref Username
+    #         UserPoolId: !Ref SpotDemoUserPool
+    UserPoolClient:
+        Type: AWS::Cognito::UserPoolClient
+        Properties:
+            GenerateSecret: false
+            RefreshTokenValidity: 200
+            UserPoolId: !Ref SpotDemoUserPool
+    SpotDemoIdentityPool:
+        Type: "AWS::Cognito::IdentityPool"
+        Properties:
+            AllowUnauthenticatedIdentities: false
+            CognitoIdentityProviders:
+                - 
+                    ClientId: !Ref UserPoolClient
+                    ProviderName: !GetAtt SpotDemoUserPool.ProviderName 
     VPC:
         Type: AWS::EC2::VPC
         Properties:
@@ -34,10 +93,49 @@ Resources:
             Tags:
                 - Key: Name
                   Value: spot-demo-vpc
-    PrivateSubnet1:
+    PublicSubnet1:
         Type: AWS::EC2::Subnet
         Properties : 
             CidrBlock : 10.0.0.0/24
+            MapPublicIpOnLaunch : False
+            AvailabilityZone:
+              Fn::Select: 
+                - 0
+                - Fn::GetAZs: ""
+            Tags:
+                - Key: Name
+                  Value: spot-demo-vpc-public1
+            VpcId : !Ref VPC
+    PublicSubnet2:
+        Type: AWS::EC2::Subnet
+        Properties : 
+            CidrBlock : 10.0.1.0/24
+            MapPublicIpOnLaunch : False
+            AvailabilityZone:
+              Fn::Select: 
+                - 1
+                - Fn::GetAZs: ""
+            Tags:
+                - Key: Name
+                  Value: spot-demo-vpc-public2
+            VpcId : !Ref VPC
+    PublicSubnet3:
+        Type: AWS::EC2::Subnet
+        Properties : 
+            CidrBlock : 10.0.2.0/24
+            MapPublicIpOnLaunch : False
+            AvailabilityZone:
+              Fn::Select: 
+                - 2
+                - Fn::GetAZs: ""
+            Tags:
+                - Key: Name
+                  Value: spot-demo-vpc-public3
+            VpcId : !Ref VPC
+    PrivateSubnet1:
+        Type: AWS::EC2::Subnet
+        Properties : 
+            CidrBlock : 10.0.3.0/24
             MapPublicIpOnLaunch : False
             AvailabilityZone:
               Fn::Select: 
@@ -50,7 +148,7 @@ Resources:
     PrivateSubnet2:
         Type: AWS::EC2::Subnet
         Properties : 
-            CidrBlock : 10.0.1.0/24
+            CidrBlock : 10.0.4.0/24
             MapPublicIpOnLaunch : False
             AvailabilityZone:
               Fn::Select: 
@@ -63,7 +161,7 @@ Resources:
     PrivateSubnet3:
         Type: AWS::EC2::Subnet
         Properties : 
-            CidrBlock : 10.0.2.0/24
+            CidrBlock : 10.0.5.0/24
             MapPublicIpOnLaunch : False
             AvailabilityZone:
               Fn::Select: 
@@ -73,6 +171,150 @@ Resources:
                 - Key: Name
                   Value: spot-demo-vpc-private3
             VpcId : !Ref VPC
+    InternetGateway:
+        Type: AWS::EC2::InternetGateway
+        Properties : 
+            Tags:
+                - Key: Name
+                  Value: spot-demo-igw
+    InternetGatewayAttachment:
+        Type: AWS::EC2::VPCGatewayAttachment
+        Properties : 
+            InternetGatewayId : !Ref InternetGateway
+            VpcId : !Ref VPC
+    PublicRouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties : 
+            Tags : 
+                - Key: Name
+                  Value: spot-demo-public-rt
+            VpcId : !Ref VPC
+    PublicRoute:
+        Type: AWS::EC2::Route
+        Properties : 
+            DestinationCidrBlock : 0.0.0.0/0
+            GatewayId : !Ref InternetGateway
+            RouteTableId : !Ref PublicRouteTable
+    PublicSubnetRouteTableAssociation1:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties : 
+            RouteTableId : !Ref PublicRouteTable
+            SubnetId : !Ref PublicSubnet1
+    PublicSubnetRouteTableAssociation2:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties : 
+            RouteTableId : !Ref PublicRouteTable
+            SubnetId : !Ref PublicSubnet2
+    PublicSubnetRouteTableAssociation3:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties : 
+            RouteTableId : !Ref PublicRouteTable
+            SubnetId : !Ref PublicSubnet3
+    NatGateway1:
+        Type: AWS::EC2::NatGateway
+        Properties:
+            AllocationId:
+                Fn::GetAtt:
+                - EIP1
+                - AllocationId
+            SubnetId:
+                Ref: PrivateSubnet1
+            Tags:
+                - Key: Name
+                  Value: spot-demo-nat-gw
+    EIP1:
+        DependsOn: InternetGatewayAttachment
+        Type: AWS::EC2::EIP
+        Properties:
+            Domain: vpc
+    NatGateway2:
+        Type: AWS::EC2::NatGateway
+        Properties:
+            AllocationId:
+                Fn::GetAtt:
+                - EIP2
+                - AllocationId
+            SubnetId:
+                Ref: PrivateSubnet2
+            Tags:
+                - Key: Name
+                  Value: spot-demo-nat-gw
+    EIP2:
+        DependsOn: InternetGatewayAttachment
+        Type: AWS::EC2::EIP
+        Properties:
+            Domain: vpc
+    NatGateway3:
+        Type: AWS::EC2::NatGateway
+        Properties:
+            AllocationId:
+                Fn::GetAtt:
+                - EIP3
+                - AllocationId
+            SubnetId:
+                Ref: PrivateSubnet3
+            Tags:
+                - Key: Name
+                  Value: spot-demo-nat-gw
+    EIP3:
+        DependsOn: InternetGatewayAttachment
+        Type: AWS::EC2::EIP
+        Properties:
+            Domain: vpc
+    PrivateRouteTable1:
+        Type: AWS::EC2::RouteTable
+        Properties : 
+            Tags : 
+                - Key: Name
+                  Value: spot-demo-private-rt1
+            VpcId : !Ref VPC
+    PrivateRoute1:
+        Type: AWS::EC2::Route
+        Properties : 
+            DestinationCidrBlock : 0.0.0.0/0
+            NatGatewayId : !Ref NatGateway1
+            RouteTableId : !Ref PrivateRouteTable1
+    PrivateSubnetRouteTableAssociation1:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties : 
+            RouteTableId : !Ref PrivateRouteTable1
+            SubnetId : !Ref PrivateSubnet1
+    PrivateRouteTable2:
+        Type: AWS::EC2::RouteTable
+        Properties : 
+            Tags : 
+                - Key: Name
+                  Value: spot-demo-private-rt2
+            VpcId : !Ref VPC
+    PrivateRoute2:
+        Type: AWS::EC2::Route
+        Properties : 
+            DestinationCidrBlock : 0.0.0.0/0
+            NatGatewayId : !Ref NatGateway2
+            RouteTableId : !Ref PrivateRouteTable2
+    PrivateSubnetRouteTableAssociation2:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties : 
+            RouteTableId : !Ref PrivateRouteTable2
+            SubnetId : !Ref PrivateSubnet2
+    PrivateRouteTable3:
+        Type: AWS::EC2::RouteTable
+        Properties : 
+            Tags : 
+                - Key: Name
+                  Value: spot-demo-private-rt3
+            VpcId : !Ref VPC
+    PrivateRoute3:
+        Type: AWS::EC2::Route
+        Properties : 
+            DestinationCidrBlock : 0.0.0.0/0
+            NatGatewayId : !Ref NatGateway3
+            RouteTableId : !Ref PrivateRouteTable3
+    PrivateSubnetRouteTableAssociation3:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties : 
+            RouteTableId : !Ref PrivateRouteTable3
+            SubnetId : !Ref PrivateSubnet3
     Ec2Vpcndpoint:
         Type: AWS::EC2::VPCEndpoint
         Properties : 
@@ -146,9 +388,39 @@ Resources:
     Ec2SsmInstanceProfile:
         Type: AWS::IAM::InstanceProfile
         Properties : 
-            # InstanceProfileName : SpotDemoEc2SsmInstanceProfile
             Roles : 
                 - !Ref Ec2SsmRole
+    SpotDemoLaunchTemplate:
+        Type: AWS::EC2::LaunchTemplate
+        Properties:
+            LaunchTemplateData:
+                ImageId: ami-0de53d8956e8dcf80
+                IamInstanceProfile:
+                    Name: !Ref Ec2SsmInstanceProfile
+                SecurityGroupIds: 
+                    - !GetAtt VPC.DefaultSecurityGroup
+                UserData: IyEvYmluL2Jhc2gKCiMgdXBkYXRlIHBhY2thZ2VzCnl1bSB1cGRhdGUgLXkKCiMgSW5zdGFsbCBnaXQKeXVtIGluc3RhbGwgLXkgZ2l0CgojIGluc3RhbGxpbmcgcnVieSAyLjQKYW1hem9uLWxpbnV4LWV4dHJhcyBpbnN0YWxsIC15IHJ1YnkyLjQKCmNkIC9ob21lL3NzbS11c2VyCnJ1bnVzZXIgLWwgIHNzbS11c2VyIC1jICdjdXJsIC1vLSBodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vY3JlYXRpb25peC9udm0vdjAuMzIuMC9pbnN0YWxsLnNoIHwgYmFzaCcKcnVudXNlciAtbCAgc3NtLXVzZXIgLWMgJ2V4cG9ydCBOVk1fRElSPSIvaG9tZS9zc20tdXNlci8ubnZtIicKcnVudXNlciAtbCAgc3NtLXVzZXIgLWMgJy4gL2hvbWUvc3NtLXVzZXIvLm52bS9udm0uc2gnCnJ1bnVzZXIgLWwgIHNzbS11c2VyIC1jICdzb3VyY2UgL2hvbWUvc3NtLXVzZXIvLmJhc2hyYycKcnVudXNlciAtbCAgc3NtLXVzZXIgLWMgJ252bSBpbnN0YWxsIHY4LjEwLjAnCgojIEluc3RhbGxpbmcgYXdzbG9ncyBhZ2VudAp5dW0gaW5zdGFsbCAteSBhd3Nsb2dzCmNhdCA8PCBFT0wgfCBzdWRvIHRlZSAvZXRjL2F3c2xvZ3MvYXdzbG9ncy5jb25mCltnZW5lcmFsXQojIFBhdGggdG8gdGhlIENsb3VkV2F0Y2ggTG9ncyBhZ2VudCdzIHN0YXRlIGZpbGUuIFRoZSBhZ2VudCB1c2VzIHRoaXMgZmlsZSB0byBtYWludGFpbgojIGNsaWVudCBzaWRlIHN0YXRlIGFjcm9zcyBpdHMgZXhlY3V0aW9ucy4Kc3RhdGVfZmlsZSA9IC92YXIvbGliL2F3c2xvZ3MvYWdlbnQtc3RhdGUKClsvaG9tZS9zc20tdXNlci93YXRjaGRvZy5sb2ddCmRhdGV0aW1lX2Zvcm1hdCA9ICVZLSVtLSVkVCVIOiVNOiVTLiVmCmZpbGUgPSAvaG9tZS9zc20tdXNlci93YXRjaGRvZy5sb2cKYnVmZmVyX2R1cmF0aW9uID0gNTAwMApsb2dfc3RyZWFtX25hbWUgPSB7aW5zdGFuY2VfaWR9CmluaXRpYWxfcG9zaXRpb24gPSBzdGFydF9vZl9maWxlCmxvZ19ncm91cF9uYW1lID0gc3BvdC1kZW1vLXdhdGNoZG9nCgpbL2hvbWUvc3NtLXVzZXIvYXBwLmxvZ10KZGF0ZXRpbWVfZm9ybWF0ID0gJVktJW0tJWRUJUg6JU06JVMuJWYKZmlsZSA9IC9ob21lL3NzbS11c2VyL2FwcC5sb2cKYnVmZmVyX2R1cmF0aW9uID0gNTAwMApsb2dfc3RyZWFtX25hbWUgPSB7aW5zdGFuY2VfaWR9CmluaXRpYWxfcG9zaXRpb24gPSBzdGFydF9vZl9maWxlCmxvZ19ncm91cF9uYW1lID0gc3BvdC1kZW1vLWFwcApFT0wKc3VkbyBzeXN0ZW1jdGwgc3RhcnQgYXdzbG9nc2QKCmNkIC9ob21lL3NzbS11c2VyCmNhdCA8PCBFT0wgfCB0ZWUgL2hvbWUvc3NtLXVzZXIvd2F0Y2hkb2cucmIKIyAvdXNyL2Jpbi9ydWJ5CgpyZXF1aXJlICdsb2dnZXInCnJlcXVpcmUgJ25ldC9odHRwJwpyZXF1aXJlICdzb2NrZXQnCnJlcXVpcmUgJ3RpbWUnCgpMT0dfRklMRSA9ICcvaG9tZS9zc20tdXNlci93YXRjaGRvZy5sb2cnClNUT1BfTVNHID0gJ3N0b3AnClBPUlQgPSA4MTI0CkBsb2dnZXIgPSBMb2dnZXIubmV3KExPR19GSUxFKQpAbG9nZ2VyLmZvcm1hdHRlciA9IHByb2MgZG8gfHNldmVyaXR5LCBkYXRldGltZSwgcHJvZ25hbWUsIG1zZ3wKICAgICIje2RhdGV0aW1lLnN0cmZ0aW1lKCclWS0lbS0lZFQlSDolTTolUy4lNk4nKX0gI3tzZXZlcml0eX0gI3ttc2d9XG4iCmVuZAoKZGVmIHNlbmRfc3RvcF9tc2coaXAsIHBvcnQpCiAgICBUQ1BTb2NrZXQub3BlbihpcCwgcG9ydCkge3xzfAogICAgICAgIHMuc2VuZCAic3RvcCIsIDAKICAgICAgICByZXNwID0gcy5yZWN2KDIpCiAgICB9CmVuZAoKCndoaWxlIHRydWUgZG8KICAgIEBsb2dnZXIuaW5mbygnTm8gdGVybWluYXRpb24gbm90aWNlIGRldGVjdGVkLicpCiAgICBub3cgPSBUaW1lLm5vdwogICAgcmVzcCA9ICBOZXQ6OkhUVFAuZ2V0KFVSSSgnaHR0cDovLzE2OS4yNTQuMTY5LjI1NC9sYXRlc3QvbWV0YS1kYXRhL3Nwb3QvdGVybWluYXRpb24tdGltZScpKQogICAgdCA9IFRpbWUucGFyc2UocmVzcCkgcmVzY3VlIG5pbAoKICAgIGlmIHQubmlsPwogICAgICAgIHNsZWVwKDUpCiAgICBlbHNlCiAgICAgICAgQGxvZ2dlci5pbmZvICJUaGlzIGluc3RhbmNlIHdpbGwgYmUgdGVybWluYXRlZCBhdCAje3R9LiIKICAgICAgICBAbG9nZ2VyLmluZm8gIkkgaGF2ZSAje3Qtbm93fSBzZWNvbmRzIHRvIHNhdmUgbXkgc3RhdGUgYW5kIHN0b3AgYW55IGFjdGl2aXR5LiIKICAgICAgICBicmVhawogICAgZW5kCmVuZAoKc2VuZF9zdG9wX21zZygnbG9jYWxob3N0JywgUE9SVCkKQGxvZ2dlci5pbmZvICJEb25lIHNhdmluZyBzdGF0ZS4gU3RvcHBpbmcgbm93LiBCeWUuIgpFT0wKY2hvd24gc3NtLXVzZXIgd2F0Y2hkb2cucmIgCmNoZ3JwIHNzbS11c2VyIHdhdGNoZG9nLnJiIAoKcnVudXNlciAtbCAgc3NtLXVzZXIgLWMgJ2NkIC9ob21lL3NzbS11c2VyJwpydW51c2VyIC1sICBzc20tdXNlciAtYyAnbm9odXAgcnVieSAuL3dhdGNoZG9nLnJiID4gL2Rldi9udWxsIDI+JjEgJicKCmNhdCA8PCBFT0wgfCB0ZWUgL2hvbWUvc3NtLXVzZXIvYXBwLmpzCmNvbnN0IG5ldCA9IHJlcXVpcmUoJ25ldCcpOwoKY29uc3QgUE9SVCA9IDgxMjQKY29uc3QgQ09VTlRFUiA9IDEwMDAwMDA7IC8vIDEgTWkKdmFyIGkgPSAwOwpmdW5jdGlvbiBkb1dvcmsoKSB7CiAgICBpICsrCn0KdmFyIHdvcmtJbnRlcnZhbCA9IHNldEludGVydmFsKGRvV29yaywgMSk7CnZhciBsb2dJbnRlcnZhbCA9IHNldEludGVydmFsKGZ1bmN0aW9uICgpIHsKICAgIGNvbnNvbGUubG9nKCclbyAlcyBpID0gJWQnLCBuZXcgRGF0ZSgpLCAnSU5GTycsIGkpOwp9LCAxMDAwKTsKCmNvbnN0IHNlcnZlciA9IG5ldC5jcmVhdGVTZXJ2ZXIoKGMpID0+IHsKICAgIGNvbnNvbGUubG9nKCclbyAlcyBjbGllbnQgY29ubmVjdGVkJywgbmV3IERhdGUoKSwgJ0lORk8nKTsKCiAgICBjLm9uKCdlbmQnLCAoKSA9PiB7CiAgICAgICAgY29uc29sZS5sb2coJyVvICVzIGNsaWVudCBkaXNjb25uZWN0ZWQnLCBuZXcgRGF0ZSgpLCAnSU5GTycpOwogICAgfSk7CgogICAgLy8gVGhlIHNlcnZlciBjYW4gYWxzbyByZWNlaXZlIGRhdGEgZnJvbSB0aGUgY2xpZW50IGJ5IHJlYWRpbmcgZnJvbSBpdHMgc29ja2V0LgogICAgYy5vbignZGF0YScsIChjaHVuaykgPT4gewogICAgICAgIGRhdGEgPSBjaHVuay50b1N0cmluZygpOwogICAgICAgIGlmKGRhdGEudHJpbSgpID09ICdzdG9wJykgewogICAgICAgICAgICBjb25zb2xlLmxvZygnJW8gJXMgU3RvcHBpbmcgdGhlIGFwcCAuLi4nLCBuZXcgRGF0ZSgpLCAnSU5GTycpOwogICAgICAgICAgICBjbGVhckludGVydmFsKHdvcmtJbnRlcnZhbCk7CiAgICAgICAgICAgIGNsZWFySW50ZXJ2YWwobG9nSW50ZXJ2YWwpOwogICAgICAgICAgICBjb25zb2xlLmxvZygnJW8gJXMgU2F2aW5nIHN0YXRlOiBpID0gJWQnLCBuZXcgRGF0ZSgpLCAnSU5GTycsIGkpCiAgICAgICAgICAgIGNvbnNvbGUubG9nKCclbyAlcyBTdWNjZXNzZnVsbHkgc3RvcHBlZCB0aGUgYXBwIGFuZCBzYXZlZCBzdGF0ZS4nLCBuZXcgRGF0ZSgpLCAnSU5GTycpOwogICAgICAgICAgICBjLndyaXRlKCdvaycpOwoKICAgICAgICB9IGVsc2UgewogICAgICAgICAgICBjLndyaXRlKGBVbmtub3duIGNvbW1hbmQ6ICR7Y2h1bmt9YCk7CiAgICAgICAgfQogICAgICAgIAogICAgfSk7CgogICAgYy5vbignZXJyb3InLCAoZXJyKSA9PiB7CiAgICAgICAgY29uc29sZS5sb2coJyVvICVzIEVycm9yOiAlcycsIG5ldyBEYXRlKCksICdJTkZPJywgZXJyKTsKICAgIH0pOwoKfSk7CgpzZXJ2ZXIub24oJ2Vycm9yJywgKGVycikgPT4gewogICAgdGhyb3cgZXJyOwp9KTsKCnNlcnZlci5saXN0ZW4oUE9SVCwgKCkgPT4gewogICAgY29uc29sZS5sb2coJyVvICVzIFRDUCBsaXN0ZW5lciBsaXN0ZW5pbmcgb24gcG9ydCA4MTI0JywgbmV3IERhdGUoKSwgJ0lORk8nKTsKfSk7CkVPTApjaG93biBzc20tdXNlciBhcHAuanMKY2hncnAgc3NtLXVzZXIgYXBwLmpzCnJ1bnVzZXIgLWwgIHNzbS11c2VyIC1jICdjZCAvaG9tZS9zc20tdXNlcicKcnVudXNlciAtbCAgc3NtLXVzZXIgLWMgJ25vaHVwIG5vZGUgLi9hcHAuanMgPiAuL2FwcC5sb2cgMj4mMSAmJw==
+                TagSpecifications:
+                    -
+                      ResourceType: instance
+                      Tags:
+                        - Key: Name
+                          Value: spot-demo-instance
+                    -
+                      ResourceType: instance
+                      Tags:
+                        - Key: volume
+                          Value: spot-demo-instance
+            LaunchTemplateName: spot-demo-lt
+    # SpotFleetRequest:
+    #     Type: AWS::EC2::SpotFleet
+    #     Properties:
+    #         SpotFleetRequestConfigData:
+    #             AllocationStrategy:
+    #             LaunchTemplateConfigs:
+    #                 - !Ref SpotDemoLaunchTemplate
+
+
 
 Outputs:
     HandleSpotNotification:

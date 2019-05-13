@@ -120,7 +120,7 @@ const server = net.createServer((c) => {
             clearInterval(workInterval);
             clearInterval(logInterval);
             console.log('%o %s Saving state: i = %d', new Date(), 'INFO', i)
-            console.log('%o $s Successfully stopped the app and saved state.', new Date(), 'INFO');
+            console.log('%o %s Successfully stopped the app and saved state.', new Date(), 'INFO');
             c.write('ok');
 
         } else {
