@@ -60,16 +60,16 @@ Resources:
             EmailVerificationMessage: "Your AWS Spot Instance Demo App verification code is {####}."
             UsernameAttributes:
                 - email
-    # UserPoolUser:
-    #     Type: AWS::Cognito::UserPoolUser
-    #     Properties:
-    #         DesiredDeliveryMediums: 
-    #             - EMAIL
-    #         UserAttributes: 
-    #             - Name: email
-    #               Value: !Ref Username
-    #         Username: !Ref Username
-    #         UserPoolId: !Ref SpotDemoUserPool
+    UserPoolUser:
+        Type: AWS::Cognito::UserPoolUser
+        Properties:
+            DesiredDeliveryMediums: 
+                - EMAIL
+            UserAttributes: 
+                - Name: email
+                  Value: !Ref Username
+            Username: !Ref Username
+            UserPoolId: !Ref SpotDemoUserPool
     UserPoolClient:
         Type: AWS::Cognito::UserPoolClient
         Properties:
@@ -83,7 +83,55 @@ Resources:
             CognitoIdentityProviders:
                 - 
                     ClientId: !Ref UserPoolClient
-                    ProviderName: !GetAtt SpotDemoUserPool.ProviderName 
+                    ProviderName: !GetAtt SpotDemoUserPool.ProviderName
+    SpotDemoIdentityPoolAuthRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - 
+                        Effect: "Allow"
+                        Principal:
+                            Federated:
+                                - "cognito-identity.amazonaws.com"
+                        Action:
+                            - "sts:AssumeRoleWithWebIdentity"
+                        Condition:
+                            StringEquals:
+                                cognito-identity.amazonaws.com:aud: !Ref SpotDemoIdentityPool
+                            ForAnyValue:StringLike:
+                                cognito-identity.amazonaws.com:amr: authenticated
+            Path: "/"
+            Policies:
+                - 
+                    PolicyName: !Sub '${AWS::StackName}-sts'
+                    PolicyDocument:
+                        Version: '2012-10-17'
+                        Statement:
+                            - 
+                                Effect: Allow
+                                Action:
+                                    - mobileanalytics:PutEvents
+                                    - cognito-sync:*
+                                    - cognito-identity:*
+                                Resource: '*'
+                - 
+                    PolicyName: !Sub '${AWS::StackName}-ec2'
+                    PolicyDocument:
+                        Version: '2012-10-17'
+                        Statement:
+                            - 
+                                Effect: Allow
+                                Action:
+                                    - ec2:DescribeSpotFleetRequests
+                                Resource: '*'
+    IdentityPoolRoleAttachment:
+        Type: AWS::Cognito::IdentityPoolRoleAttachment
+        Properties:
+            IdentityPoolId: !Ref SpotDemoIdentityPool
+            Roles:
+                authenticated: !GetAtt SpotDemoIdentityPoolAuthRole.Arn
     VPC:
         Type: AWS::EC2::VPC
         Properties:
