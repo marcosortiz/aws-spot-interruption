@@ -17,6 +17,11 @@ class SfrForm extends React.Component {
                 <button className="ui button red" type="submit" onClick={this.onDeleteFleetRequest}>
                     Delete Fleet Request
                 </button>
+
+                <div class="ui icon button" data-tooltip="Add users to your feed">
+                    <i class="add icon"></i>
+                </div>
+
                 <button className="ui icon button" type="submit" onClick={this.onRefreshSpotRequestList}>
                     <i className="sync alternate icon"></i>
                 </button>

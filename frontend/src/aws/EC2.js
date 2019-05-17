@@ -31,9 +31,11 @@ function requestSpotFleet(cb) {
         var params = {
             SpotFleetRequestConfig: {
                 IamFleetRole: 'arn:aws:iam::369233778488:role/aws-ec2-spot-fleet-tagging-role',
-                Type: 'maintain',
-                TargetCapacity: 0,
                 AllocationStrategy: 'lowestPrice',
+                TargetCapacity: 0,
+                TerminateInstancesWithExpiration: true,
+                Type: 'maintain',
+                InstancePoolsToUseCount: 7,
                 LaunchTemplateConfigs: [
                     {
                         LaunchTemplateSpecification: {
@@ -43,11 +45,11 @@ function requestSpotFleet(cb) {
                         Overrides: [
                             {
                                 InstanceType: "t3a.medium",
-                                SubnetId: "subnet-09d915d812902a157"
+                                SubnetId: "subnet-011d858e106a2b4e5"
                               },
                               {
                                 InstanceType: "t3a.medium",
-                                SubnetId: "subnet-0e43d571f61cc07db"
+                                SubnetId: "subnet-0af6f052d506cbd66"
                               },
                               {
                                 InstanceType: "t3a.medium",
@@ -55,11 +57,11 @@ function requestSpotFleet(cb) {
                               },
                               {
                                 InstanceType: "t3.medium",
-                                SubnetId: "subnet-09d915d812902a157"
+                                SubnetId: "subnet-011d858e106a2b4e5"
                               },
                               {
                                 InstanceType: "t3.medium",
-                                SubnetId: "subnet-0e43d571f61cc07db"
+                                SubnetId: "subnet-0af6f052d506cbd66"
                               },
                               {
                                 InstanceType: "t3.medium",
@@ -67,11 +69,11 @@ function requestSpotFleet(cb) {
                               },
                               {
                                 InstanceType: "t2.medium",
-                                SubnetId: "subnet-09d915d812902a157"
+                                SubnetId: "subnet-011d858e106a2b4e5"
                               },
                               {
                                 InstanceType: "t2.medium",
-                                SubnetId: "subnet-0e43d571f61cc07db"
+                                SubnetId: "subnet-0af6f052d506cbd66"
                               },
                               {
                                 InstanceType: "t2.medium",
@@ -108,8 +110,26 @@ function cancelSpotFleetRequests(spotFleetRequestId, cb) {
         });
 }
 
+function describeSpotFleetRequestHistory(spotFleetRequestId, cb) {
+    Auth.currentCredentials()
+    .then(credentials => {
+        const ec2 = new EC2({
+            region: 'us-east-1',
+            credentials: Auth.essentialCredentials(credentials),
+        });
+        var params = {
+            SpotFleetRequestId: spotFleetRequestId,
+            StartTime: new Date(0)
+        }
+        ec2.describeSpotFleetRequestHistory(params, function(err, data) {
+            cb(err, data);
+        })
+    });
+}
+
 export default {
     cancelSpotFleetRequests: cancelSpotFleetRequests,
     describeSpotFleetRequests: describeSpotFleetRequests,
+    describeSpotFleetRequestHistory: describeSpotFleetRequestHistory,
     requestSpotFleet: requestSpotFleet
 }

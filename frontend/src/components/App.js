@@ -1,7 +1,7 @@
 import React from 'react';
 import Amplify from 'aws-amplify';
 import {withAuthenticator} from 'aws-amplify-react';
-import SfrPage from './SfrPage';
+import SfrPage from './sfr/SfrPage';
 
 class App extends React.Component {
 

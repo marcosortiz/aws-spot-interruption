@@ -1,12 +1,14 @@
 import React from 'react';
 import SfrForm from './SfrForm';
 import SfrList from './SfrList';
-import ErrorMessage from './ErrorMessage';
-import Ddb from '../aws/DynamoDB';
-import Ec2 from '../aws/EC2';
+import HistoryPage from '../history/HistoryPage';
+import ErrorMessage from '../ErrorMessage';
+import Ddb from '../../aws/DynamoDB';
+import Ec2 from '../../aws/EC2';
 
 class SfrPage extends React.Component {
     state = { 
+        sfrId: '',
         requests: [],
         error: {
             message: '',
@@ -35,7 +37,11 @@ class SfrPage extends React.Component {
                                     Ec2.describeSpotFleetRequests(data3.Items[0].id.S, function(err4, data4) {
                                         if(err4) _this.setState( {error: err4, loading: false} )
                                         else {
-                                            _this.setState( {requests: data4.SpotFleetRequestConfigs, loading: false} )
+                                            _this.setState({
+                                                requests: data4.SpotFleetRequestConfigs,
+                                                loading: false,
+                                                sfrId: data4.SpotFleetRequestConfigs[0].SpotFleetRequestId || ''
+                                            });
                                         }                    
                                     })
                                 }
@@ -59,7 +65,11 @@ class SfrPage extends React.Component {
                         _this.setState( {loading: true} );
                         if(err2) _this.setState( {error: err2, loading: false} )
                         else {
-                            _this.setState( {requests: data2.SpotFleetRequestConfigs, loading: false} )
+                            _this.setState({
+                                requests: data2.SpotFleetRequestConfigs, 
+                                loading: false,
+                                sfrId: data2.SpotFleetRequestConfigs[0].SpotFleetRequestId || ''
+                            });
                         }
                     });
                 }
@@ -102,22 +112,26 @@ class SfrPage extends React.Component {
     renderContent() {
         if(this.state.requests.length > 0) {
             return(
-                <div className="ui segment">
-                    <ErrorMessage className="ui"
-                        message={this.state.error.message}
-                        stack={this.state.error.stack}
-                    />
-                    <SfrForm className="ui"
-                        onRefreshSubmit={this.onRefreshSubmit}
-                        onDeleteFleetRequest={this.onDeleteFleetRequest}
-                    />
-                    <p></p>
-                    <SfrList className="ui" requests={this.state.requests}/>
-    
-                    <div className={`ui ${this.state.loading ? 'active' : ''} dimmer`}>
-                        <div className="ui text loader">Loading Spot Fleet Requests ...</div>
+                <div>
+                    <div className="ui segment">
+                        <ErrorMessage className="ui"
+                            message={this.state.error.message}
+                            stack={this.state.error.stack}
+                        />
+                        <SfrForm className="ui"
+                            onRefreshSubmit={this.onRefreshSubmit}
+                            onDeleteFleetRequest={this.onDeleteFleetRequest}
+                        />
+                        <p></p>
+                        <SfrList className="ui" requests={this.state.requests}/>
+        
+                        <div className={`ui ${this.state.loading ? 'active' : ''} dimmer`}>
+                            <div className="ui text loader">Loading Spot Fleet Requests ...</div>
+                        </div>
                     </div>
+                    <HistoryPage sfrId={this.state.sfrId}/>
                 </div>
+
             );
         } else {
             return(
