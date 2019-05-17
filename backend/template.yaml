@@ -26,7 +26,7 @@ Resources:
                               - EC2 Spot Instance Interruption Warning
             Policies:
                 - AWSLambdaExecute # Managed Policy
-    SpotWorkloadsTable:
+    SpotFleetRequestsTable:
         Type: AWS::Serverless::SimpleTable
         Properties:
             PrimaryKey:
@@ -124,8 +124,39 @@ Resources:
                             - 
                                 Effect: Allow
                                 Action:
-                                    - ec2:DescribeSpotFleetRequests
+                                    - ec2:*
                                 Resource: '*'
+                - 
+                    PolicyName: !Sub '${AWS::StackName}-iam'
+                    PolicyDocument:
+                        Version: '2012-10-17'
+                        Statement:
+                            - 
+                                Effect: Allow
+                                Action:
+                                    - iam:ListRoles
+                                    - iam:PassRole
+                                    - iam:ListInstanceProfiles
+                                    - iam:AddRoleToInstanceProfile
+                                    - iam:AttachRolePolicy
+                                    - iam:CreateInstanceProfile
+                                    - iam:CreateRole
+                                    - iam:GetRole
+                                    - iam:ListPolicies
+                                Resource: '*'
+                - 
+                    PolicyName: !Sub '${AWS::StackName}-ddb'
+                    PolicyDocument:
+                        Version: '2012-10-17'
+                        Statement:
+                            - 
+                                Effect: Allow
+                                Action:
+                                    - dynamodb:DeleteItem
+                                    - dynamodb:PutItem
+                                    - dynamodb:Query
+                                    - dynamodb:Scan
+                                Resource: !GetAtt SpotFleetRequestsTable.Arn
     IdentityPoolRoleAttachment:
         Type: AWS::Cognito::IdentityPoolRoleAttachment
         Properties:
@@ -443,6 +474,7 @@ Resources:
         Properties:
             LaunchTemplateData:
                 ImageId: ami-0de53d8956e8dcf80
+                InstanceType: t2.medium
                 IamInstanceProfile:
                     Name: !Ref Ec2SsmInstanceProfile
                 SecurityGroupIds: 
@@ -460,23 +492,14 @@ Resources:
                         - Key: volume
                           Value: spot-demo-instance
             LaunchTemplateName: spot-demo-lt
-    # SpotFleetRequest:
-    #     Type: AWS::EC2::SpotFleet
-    #     Properties:
-    #         SpotFleetRequestConfigData:
-    #             AllocationStrategy:
-    #             LaunchTemplateConfigs:
-    #                 - !Ref SpotDemoLaunchTemplate
-
-
 
 Outputs:
     HandleSpotNotification:
         Description: HandleSpotNotification function ARN
         Value: !GetAtt HandleSpotNotification.Arn
-    SpotWorkloadsTable:
-        Description: SpotWorkloadsTable function ARN
-        Value: !GetAtt SpotWorkloadsTable.Arn
+    SpotFleetRequestsTable:
+        Description: SpotFleetRequestsTable function ARN
+        Value: !GetAtt SpotFleetRequestsTable.Arn
     VPC:
         Description: VPC where the spot instances will run on
         Value: !Ref VPC

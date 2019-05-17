@@ -1,23 +1,16 @@
 import React from 'react';
 import Amplify from 'aws-amplify';
 import {withAuthenticator} from 'aws-amplify-react';
-// import SpotRequestsList from './SpotRequestList';
-import SpotRequestPage from './SpotRequestPage';
+import SfrPage from './SfrPage';
 
 class App extends React.Component {
+
+
+    
     render() {
         return (
-            <div className="ui container" style={{marginTop: '10px'}}>
-                <div className="ui inverted menu">
-                    <a className="active item" href="x.html">
-                        SpotRequests
-                    </a>
-                    <a className="item" href="x.html">
-                        Workloads
-                    </a>
-                </div>
-                {/* <SpotRequestsList /> */}
-                <SpotRequestPage />
+            <div className="ui container">
+                <SfrPage />
             </div>
         );
     }
