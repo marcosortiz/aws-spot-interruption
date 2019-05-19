@@ -34,14 +34,13 @@ class HistoryPage extends React.Component {
 
 
     componentDidMount() {
-        console.log(`search(${this.props.sfrId})`);
         this.search(this.props.sfrId);
-
     }
 
     renderContent() {
         return(
-            <div className="ui segment">
+            // <div className="ui segment" style={{overflow: 'auto', maxHeight: 400 }}>
+            <div className="ui segment" style={{overflow: 'auto' }} >
                 <ErrorMessage className="ui"
                     message={this.state.error.message}
                     stack={this.state.error.stack}

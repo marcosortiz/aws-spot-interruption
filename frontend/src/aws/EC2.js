@@ -1,8 +1,6 @@
 import { Auth } from 'aws-amplify';
 import EC2 from 'aws-sdk/clients/ec2';
 
-
-
 function describeSpotFleetRequests(spotFleetRequestId, cb) {
     Auth.currentCredentials()
         .then(credentials => {
@@ -127,9 +125,44 @@ function describeSpotFleetRequestHistory(spotFleetRequestId, cb) {
     });
 }
 
+function modifySpotFleetRequest(id, targetCapacity, cb) {
+    Auth.currentCredentials()
+    .then(credentials => {
+        const ec2 = new EC2({
+            region: 'us-east-1',
+            credentials: Auth.essentialCredentials(credentials),
+        });
+        var params = {
+            SpotFleetRequestId: id,
+            TargetCapacity: targetCapacity
+        }
+        ec2.modifySpotFleetRequest(params, function(err, data) {
+            cb(err, data);
+        })
+    });
+}
+
+function describeSpotFleetInstances(id, cb) {
+    Auth.currentCredentials()
+    .then(credentials => {
+        const ec2 = new EC2({
+            region: 'us-east-1',
+            credentials: Auth.essentialCredentials(credentials),
+        });
+        var params = {
+            SpotFleetRequestId: id
+        }
+        ec2.describeSpotFleetInstances(params, function(err, data) {
+            cb(err, data);
+        })
+    });
+}
+
 export default {
     cancelSpotFleetRequests: cancelSpotFleetRequests,
     describeSpotFleetRequests: describeSpotFleetRequests,
     describeSpotFleetRequestHistory: describeSpotFleetRequestHistory,
-    requestSpotFleet: requestSpotFleet
+    requestSpotFleet: requestSpotFleet,
+    modifySpotFleetRequest: modifySpotFleetRequest,
+    describeSpotFleetInstances: describeSpotFleetInstances
 }
