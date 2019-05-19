@@ -108,20 +108,26 @@ function cancelSpotFleetRequests(spotFleetRequestId, cb) {
         });
 }
 
-function describeSpotFleetRequestHistory(spotFleetRequestId, cb) {
+function describeSpotFleetRequestHistory(params, cb) {
     Auth.currentCredentials()
     .then(credentials => {
         const ec2 = new EC2({
             region: 'us-east-1',
             credentials: Auth.essentialCredentials(credentials),
         });
-        var params = {
-            SpotFleetRequestId: spotFleetRequestId,
-            StartTime: new Date(0)
-        }
         ec2.describeSpotFleetRequestHistory(params, function(err, data) {
-            cb(err, data);
-        })
+            if (err) cb(err, data);
+            else {
+                cb(null, data);
+                if (data.NextToken) {
+                    params.NextToken = data.NextToken;
+                    describeSpotFleetRequestHistory(params, cb)
+                } else {
+                    // done
+                    cb(null, null);
+                }
+            }
+        });
     });
 }
 

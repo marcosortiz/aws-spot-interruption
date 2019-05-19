@@ -4,7 +4,6 @@ import HistoryForm from './HistoryForm';
 import HistoryList from './HistoryList';
 import EC2 from '../../aws/EC2';
 
-
 class HistoryPage extends React.Component {
     state = { 
         events: [],
@@ -15,23 +14,33 @@ class HistoryPage extends React.Component {
         loading: false
     };
 
-
     search(id) {
-        this.setState( {loading: true} );
         var _this = this;
-        EC2.describeSpotFleetRequestHistory(id, function(err, data) {
-            if(err) _this.setState( {error: err, loading: false} )
-            else {
-                _this.setState( {loading: false} );
-                _this.setState( {events: data.HistoryRecords, loading: false} )
+        var params = {
+            SpotFleetRequestId: id,
+            StartTime: new Date(0),
+            NextToken: ''
+        }
+        this.setState( {events: [], loading: true} );
+        EC2.describeSpotFleetRequestHistory(params, function(err, data) {
+            if(err){
+                _this.setState( {error: err, loading: false} );
+            } else {
+                // still paginating
+                if (data) {
+                    var joined = _this.state.events.concat(data.HistoryRecords);
+                    _this.setState( {events: joined} )
+                } else { //done
+                    var reverse = _this.state.events.reverse();
+                    _this.setState( {events: reverse, loading: false} )
+                }
             }
         });
     }
 
     onRefreshSubmit = ()  => {
-        this.search(this.props.sfrId);
+       this.search(this.props.sfrId);
     }
-
 
     componentDidMount() {
         this.search(this.props.sfrId);
