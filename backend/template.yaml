@@ -7,14 +7,17 @@ Parameters:
         Default: ormarcos@amazon.com
         Description: A valid email address is required
 
-
 Resources: 
     HandleSpotNotification:
         Type: AWS::Serverless::Function
         Properties:
             CodeUri: ./src
-            Handler: lambda/handle_spot_notification.lambda_handler
+            Handler: lambda/handle_spot_notification.Lambda::RecordInterruption.lambda_handler
             Runtime: ruby2.5
+            Environment:
+                Variables:
+                    INTERRUPTIONS_TABLE_NAME: !Ref SpotInterruptionsTable
+                    SFR_TABLE_NAME: !Ref SpotFleetRequestsTable
             Events:
                 SpotInterruption:
                     Type: CloudWatchEvent
@@ -26,12 +29,48 @@ Resources:
                               - EC2 Spot Instance Interruption Warning
             Policies:
                 - AWSLambdaExecute # Managed Policy
+                - Version: '2012-10-17' # Policy Document
+                  Statement:
+                    - Effect: Allow
+                      Action:
+                        - dynamodb:PutItem
+                        - dynamodb:UpdateItem
+                      Resource:
+                        - !GetAtt SpotInterruptionsTable.Arn
+                - Version: '2012-10-17' # Policy Document
+                  Statement:
+                    - Effect: Allow
+                      Action:
+                        - dynamodb:Scan
+                      Resource:
+                        - !GetAtt SpotFleetRequestsTable.Arn
     SpotFleetRequestsTable:
         Type: AWS::Serverless::SimpleTable
         Properties:
             PrimaryKey:
                 Name: id
                 Type: String
+    SpotInterruptionsTable: 
+        Type: AWS::DynamoDB::Table
+        Properties: 
+            AttributeDefinitions: 
+                - 
+                    AttributeName: sfrId
+                    AttributeType: S
+                - 
+                    AttributeName: instanceId
+                    AttributeType: S
+            KeySchema: 
+                - 
+                    AttributeName: sfrId
+                    KeyType: HASH
+                - 
+                    AttributeName: instanceId
+                    KeyType: RANGE
+            ProvisionedThroughput:
+                ReadCapacityUnits: 1
+                WriteCapacityUnits: 1
+
     SpotDemoUserPool:
         Type: "AWS::Cognito::UserPool"
         Properties:
@@ -500,6 +539,9 @@ Outputs:
     SpotFleetRequestsTable:
         Description: SpotFleetRequestsTable function ARN
         Value: !GetAtt SpotFleetRequestsTable.Arn
+    SpotInterruptionsTable:
+        Description: SpotInterruptionsTable function ARN
+        Value: !GetAtt SpotInterruptionsTable.Arn
     VPC:
         Description: VPC where the spot instances will run on
         Value: !Ref VPC

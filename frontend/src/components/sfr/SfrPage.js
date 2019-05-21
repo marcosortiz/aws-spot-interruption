@@ -172,10 +172,6 @@ class SfrPage extends React.Component {
         this.setState({activeTab: 'instances'});
     }
 
-    onSavingsClick = () => {
-        this.setState({activeTab: 'savings'});
-    }
-
     renderContent() {
         if(this.state.requests.length > 0) {
             return(
@@ -210,16 +206,12 @@ class SfrPage extends React.Component {
                     <div className="ui top attached tabular menu">
                         <button className={`item ${this.state.activeTab === 'history' ? 'active' : ''}`} data-tab="history" onClick={this.onHistoryClick}>History</button>
                         <button className={`item ${this.state.activeTab === 'instances' ? 'active' : ''}`} data-tab="instances" onClick={this.onInstancesClick}>Instances</button>
-                        <button className={`item ${this.state.activeTab === 'savings' ? 'active' : ''}`} data-tab="savings" onClick={this.onSavingsClick}>Savings</button>
                     </div>
                     <div className={`ui bottom attached tab segment ${this.state.activeTab === 'history' ? 'active' : ''}`} data-tab="first">
                         <HistoryPage sfrId={this.state.sfrId} />
                     </div>
                     <div className={`ui bottom attached tab segment ${this.state.activeTab === 'instances' ? 'active' : ''}`} data-tab="second">
                         <InstancesPage sfrId={this.state.sfrId} />
-                    </div>
-                    <div className={`ui bottom attached tab segment ${this.state.activeTab === 'savings' ? 'active' : ''}`} data-tab="third">
-                        TODO
                     </div>
                 </div>
 

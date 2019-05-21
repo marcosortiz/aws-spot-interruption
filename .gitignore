@@ -1,6 +1,7 @@
 # ----- AWS SAM -----
 packaged.yaml
 .aws-sam
+backend/vendor
 
 # ----- Ruby -----
 .bundle
