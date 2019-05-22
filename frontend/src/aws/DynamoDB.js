@@ -1,15 +1,16 @@
 import { Auth } from 'aws-amplify';
 import DynamoDB from 'aws-sdk/clients/dynamodb';
+import Config from '../config';
 
 function saveToDdb(id, cb) {
     Auth.currentCredentials()
         .then(credentials => {
             const ddb = new DynamoDB({
-                region: 'us-east-1',
+                region: Config.region,
                 credentials: Auth.essentialCredentials(credentials),
             });
             var params = {
-                TableName: 'spot-demo-app-SpotFleetRequestsTable-V8XFJ9O8BMWB',
+                TableName: Config.dynamodb.SpotFleetRequestsTable,
                 Item: {
                     'id': {S: id}
                 }
@@ -25,11 +26,11 @@ function scanSfrFromDdb(cb) {
     Auth.currentCredentials()
         .then(credentials => {
             const ddb = new DynamoDB({
-                region: 'us-east-1',
+                region: Config.region,
                 credentials: Auth.essentialCredentials(credentials),
             });
             var params = {
-                TableName: 'spot-demo-app-SpotFleetRequestsTable-V8XFJ9O8BMWB',
+                TableName: Config.dynamodb.SpotFleetRequestsTable,
             }
             ddb.scan(params, function(err, data) {
                 cb(err, data);
@@ -41,11 +42,11 @@ function deleteSfrFromDdb(id, cb) {
     Auth.currentCredentials()
         .then(credentials => {
             const ddb = new DynamoDB({
-                region: 'us-east-1',
+                region: Config.region,
                 credentials: Auth.essentialCredentials(credentials),
             });
             var params = {
-                TableName: 'spot-demo-app-SpotFleetRequestsTable-V8XFJ9O8BMWB',
+                TableName: Config.dynamodb.SpotFleetRequestsTable,
                 Key: {
                     'id': {S: id}
                 }

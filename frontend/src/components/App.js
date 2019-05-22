@@ -2,6 +2,7 @@ import React from 'react';
 import Amplify from 'aws-amplify';
 import {withAuthenticator} from 'aws-amplify-react';
 import SfrPage from './sfr/SfrPage';
+import Config from '../config';
 
 class App extends React.Component {
 
@@ -19,10 +20,10 @@ class App extends React.Component {
 
 Amplify.configure({
     Auth: {
-        identityPoolId: 'us-east-1:723aef17-de06-4272-8907-34f4e29b8816',
-        region: 'us-east-1',
-        userPoolId: 'us-east-1_5JLM25m4g',
-        userPoolWebClientId: '43vmv2bbugs1mk10g2ofqra3vq',
+        identityPoolId: Config.cognito.IdentityPoolId,
+        region: Config.region,
+        userPoolId: Config.cognito.UserPoolId,
+        userPoolWebClientId: Config.cognito.userPoolWebClientId,
         mandatorySignIn: true,
     }
 });

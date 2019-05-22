@@ -8,3 +8,6 @@ backend/vendor
 
 # ----- Node -----
 node_modules
+
+# ----- Frontend -----
+frontend/src/config/config.json
