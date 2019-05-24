@@ -3,6 +3,7 @@ import SfrForm from './SfrForm';
 import SfrList from './SfrList';
 import HistoryPage from '../history/HistoryPage';
 import InstancesPage from '../instances/InstancesPage';
+import WorkloadsPage from '../workloads/WorkloadsPage';
 import ErrorMessage from '../ErrorMessage';
 import Ddb from '../../aws/DynamoDB';
 import Ec2 from '../../aws/EC2';
@@ -19,7 +20,7 @@ class SfrPage extends React.Component {
         showCapacityPopup: false,
         showCancelFleetRequestPopup: false,
         newTargetCapacity: 0,
-        activeTab: 'history'
+        activeTab: 'workloads'
     };
 
     create() {
@@ -168,6 +169,10 @@ class SfrPage extends React.Component {
         this.setState({activeTab: 'history'});
     }
 
+    onWorkloadsClick = () => {
+        this.setState({activeTab: 'workloads'});
+    }
+
     onInstancesClick = () => {
         this.setState({activeTab: 'instances'});
     }
@@ -204,8 +209,12 @@ class SfrPage extends React.Component {
                         </div>
                     </div>
                     <div className="ui top attached tabular menu">
+                        <button className={`item ${this.state.activeTab === 'workloads' ? 'active' : ''}`} data-tab="workloads" onClick={this.onWorkloadsClick}>Workloads</button>
                         <button className={`item ${this.state.activeTab === 'history' ? 'active' : ''}`} data-tab="history" onClick={this.onHistoryClick}>History</button>
                         <button className={`item ${this.state.activeTab === 'instances' ? 'active' : ''}`} data-tab="instances" onClick={this.onInstancesClick}>Instances</button>
+                    </div>
+                    <div className={`ui bottom attached tab segment ${this.state.activeTab === 'workloads' ? 'active' : ''}`} data-tab="workloads">
+                        <WorkloadsPage sfrId={this.state.sfrId} />
                     </div>
                     <div className={`ui bottom attached tab segment ${this.state.activeTab === 'history' ? 'active' : ''}`} data-tab="first">
                         <HistoryPage sfrId={this.state.sfrId} />

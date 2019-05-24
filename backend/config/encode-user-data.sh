@@ -1,0 +1,1 @@
+openssl base64 -in user-data.sh -out encoded-user-data.txt

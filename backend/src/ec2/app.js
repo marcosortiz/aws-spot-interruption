@@ -12,14 +12,14 @@ const PERIOD = 300;     // seconds
 const INC = Number((100/300).toFixed(2));
 
 var progress = 0;
+var uuid = uuidv4();
+
 function doWork() {
     if (progress < 100) {
         progress = Number((progress + INC).toFixed(2));
         progress = progress > 100 ? 100 : progress;
     }
 }
-
-var uuid = uuidv4();
 
 var workInterval = setInterval(doWork, WORK_FREQUENCY);
 var logInterval = setInterval(function () {

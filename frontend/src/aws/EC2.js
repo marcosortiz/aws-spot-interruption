@@ -30,8 +30,6 @@ function requestSpotFleet(cb) {
         var params = {
             SpotFleetRequestConfig: Config.ec2.SpotFleetRequestConfig
         }
-        console.log(params);
-
         ec2.requestSpotFleet(params, function(err, data) {
             cb(err, data);
         })

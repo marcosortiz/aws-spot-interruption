@@ -1,13 +1,13 @@
 import React from 'react';
 import ErrorMessage from '../ErrorMessage';
-import InstancesHeader from './InstancesHeader';
-import InstanceList from './InstanceList';
-import Ec2 from '../../aws/EC2';
+import WorkloadsHeader from './WorkloadsHeader';
+import WorkloadList from './WorkloadList';
+import Lambda from '../../aws/Lambda';
 
+class WorkloadsPage extends React.Component {
 
-class InstancesPage extends React.Component {
     state = { 
-        instances: [],
+        workloads: [],
         error: {
             message: '',
             stack: ''
@@ -15,29 +15,28 @@ class InstancesPage extends React.Component {
         loading: false
     };
 
-    searchInstances(id) {
-        var _this = this;
+    searchWorkloads() {
         this.setState( {loading: true} );
-        Ec2.describeSpotFleetInstances(id, function(err, data) {
-            if(err) _this.setState({
-                error: err,
-                loading: false
-            })
-            else { 
+        var _this = this;
+        Lambda.queryWorkloads(this.props.sfrId, function(err, data) {
+            if(err){
+                _this.setState( {error: err, loading: false} );
+            } else {
+                var workloads = JSON.parse(data.Payload);
                 _this.setState({
                     loading: false,
-                    instances: data.ActiveInstances
+                    workloads: workloads
                 });
             }
         });
     }
 
     componentDidMount() {
-        this.searchInstances(this.props.sfrId);
+        this.searchWorkloads();
     }
 
     onRefreshSubmit = ()  => {
-        this.searchInstances(this.props.sfrId);
+        this.searchWorkloads(this.props.sfrId);
     }
 
     renderContent() {
@@ -47,9 +46,8 @@ class InstancesPage extends React.Component {
                     message={this.state.error.message}
                     stack={this.state.error.stack}
                 />
-                <InstancesHeader onRefreshSubmit={this.onRefreshSubmit}/>
-                <InstanceList instances={this.state.instances}/>
-
+                <WorkloadsHeader onRefreshSubmit={this.onRefreshSubmit} />
+                <WorkloadList workloads={this.state.workloads}/>
                 <div className={`ui ${this.state.loading ? 'active' : ''} dimmer`}>
                     <div className="ui text loader">Loading Instances ...</div>
                 </div>
@@ -62,6 +60,6 @@ class InstancesPage extends React.Component {
             this.renderContent()
         );
     }
-}
 
-export default InstancesPage;
+}
+export default WorkloadsPage;

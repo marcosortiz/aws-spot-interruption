@@ -12,5 +12,8 @@ export default {
     },
     ec2: {
         SpotFleetRequestConfig: Config.SpotFleetRequestConfig
+    },
+    lambda: {
+        QueryWorkloadsFunctionArn: Config.QueryWorkloadsFunctionArn
     }
 };

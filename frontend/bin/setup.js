@@ -14,9 +14,10 @@ const KEYS = [
     'SpotInterruptionsTable',
     'SpotDemoLaunchTemplate',
     'SpotDemoLaunchTemplateVersion',
-    'PublicSubnet1',
-    'PublicSubnet2',
-    'PublicSubnet3'
+    'PrivateSubnet1',
+    'PrivateSubnet2',
+    'PrivateSubnet3',
+    'QueryWorkloadsFunctionArn'
 ];
 const INSTANCE_TYPES = ['t3a.medium', 't3.medium', 't2.medium'];
 
@@ -105,9 +106,9 @@ function fetchConfig(keys, outputs) {
                 launchTemplateVersion: find(outputs, 'SpotDemoLaunchTemplateVersion'),
                 instanceTypes: INSTANCE_TYPES,
                 subnets: [
-                    find(outputs, 'PublicSubnet1'),
-                    find(outputs, 'PublicSubnet2'),
-                    find(outputs, 'PublicSubnet3')
+                    find(outputs, 'PrivateSubnet1'),
+                    find(outputs, 'PrivateSubnet2'),
+                    find(outputs, 'PrivateSubnet3')
                 ]
             }
             var sfrConfig = getSpotFleetRequestConfig(params);

@@ -1,21 +1,17 @@
 require 'aws-sdk-dynamodb'
 
 module Ddb
-    class SpotInterruption
+    class Workload
 
-        DEFAULT_TABLE_NAME = 'SpotInterruptions'
+        DEFAULT_TABLE_NAME = 'SpotFleetRequests'
 
         def initialize(opts={})
             @client  = Aws::DynamoDB::Client.new
             @table_name = opts[:table_name] || DEFAULT_TABLE_NAME
         end
 
-        def getInterruptions(sfr_id)
-            resp = @client.query({
-                expression_attribute_values: {
-                    ":v1" => sfr_id, 
-                  }, 
-                key_condition_expression: "sfrId = :v1",
+        def scan
+            resp = @client.scan({
                 table_name: @table_name, 
             })
 
@@ -26,19 +22,19 @@ module Ddb
             resp = @client.update_item({
                 expression_attribute_names: {
                     "#NA" => "notifiedAt",
-                    "#LD"  => "lambdaDelay"
+                    "#MD"  => "metadataDelay"
                 }, 
                 expression_attribute_values: {
                     ":na" => params['notified_at'],
-                    ":ld" => params['lambda_delay'],
+                    ":md" => params['delay'],
                 }, 
                 key: {
-                    "sfrId" => params['sfrId'],
+                    "id" => params['id'],
                     "instanceId" => params['instanceId'],
                 }, 
                 return_values: "ALL_NEW", 
                 table_name: @table_name,
-                update_expression: "SET #NA = :na, #LD = :ld", 
+                update_expression: "SET #NA = :na, #MD = :md", 
             })
         end
 
@@ -46,21 +42,20 @@ module Ddb
             resp = @client.update_item({
                 expression_attribute_names: {
                     "#P" => "progress",
-                    "#WI" => "workloadId",
                 }, 
                 expression_attribute_values: {
                     ":p" => params['progress'],
-                    ":wi" => params['workloadId']
                 }, 
                 key: {
-                    "sfrId" => params['sfrId'],
+                    "id" => params['id'],
                     "instanceId" => params['instanceId'],
                 }, 
                 return_values: "ALL_NEW", 
                 table_name: @table_name,
-                update_expression: "SET #P = :p, #WI = :wi", 
+                update_expression: "SET #P = :p", 
             })
         end
+
 
     end
 end

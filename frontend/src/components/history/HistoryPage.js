@@ -49,7 +49,7 @@ class HistoryPage extends React.Component {
     renderContent() {
         return(
             // <div className="ui segment" style={{overflow: 'auto', maxHeight: 400 }}>
-            <div className="ui segment" style={{overflow: 'auto' }} >
+            <div className="ui segment basic" style={{overflow: 'auto' }} >
                 <ErrorMessage className="ui"
                     message={this.state.error.message}
                     stack={this.state.error.stack}
