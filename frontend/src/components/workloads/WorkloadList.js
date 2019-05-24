@@ -36,7 +36,7 @@ class WorkloadList extends React.Component {
                     <tbody>
                         {this.props.workloads.map(w => {
                             return (
-                                <tr key={w.instanceId} className={w.notifiedAt ? 'error' : ''}>
+                                <tr key={w.instanceId} className={(w.notifiedAt && w.progress !== '100') ? 'error' : ''}>
                                     <td data-label="Workload Id">
                                         <div className="ui horizontal label blue">
                                             {w.workloadId}
@@ -56,7 +56,7 @@ class WorkloadList extends React.Component {
                                         {this.getProgress(w)}
                                     </td>
                                     <td data-label="Notified At">
-                                        <div className={`ui horizontal ${w.notifiedAt ? 'red' : ''} label`}>
+                                        <div className={`ui horizontal ${(w.notifiedAt && w.progress !== '100') ? 'red' : ''} label`}>
                                             {w.notifiedAt ? w.notifiedAt : 'N/A'}
                                         </div>
                                     </td>
