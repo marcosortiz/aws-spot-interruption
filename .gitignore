@@ -11,3 +11,6 @@ node_modules
 
 # ----- Frontend -----
 frontend/src/config/config.json
+
+# ----- Backend -----
+backend/src/ec2/config.json
