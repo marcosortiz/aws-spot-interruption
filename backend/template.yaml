@@ -60,7 +60,7 @@ Resources:
                     Type: CloudWatchLogs
                     Properties:
                         LogGroupName: spot-demo-app
-                        FilterPattern: "[recorded_at,  level=PROGRESS || level=SAVING_PROGRESS, workloadId, instanceId, value]"
+                        FilterPattern: "[recorded_at,  level=PROGRESS || level=SAVING_PROGRESS || level=STARTED_AT || level=RESUMED_FROM, workloadId, instanceId, value]"
             Policies:
                 - AWSLambdaExecute # Managed Policy
                 - Version: '2012-10-17' # Policy Document
@@ -641,7 +641,46 @@ Resources:
                     Name: !Ref Ec2SsmInstanceProfile
                 SecurityGroupIds: 
                     - !GetAtt VPC.DefaultSecurityGroup
-                UserData: IyEvYmluL2Jhc2gKCiMgdXBkYXRlIHBhY2thZ2VzCnl1bSB1cGRhdGUgLXkKCiMgSW5zdGFsbCBnaXQKeXVtIGluc3RhbGwgLXkgZ2l0CgojIGluc3RhbGxpbmcgcnVieSAyLjQKYW1hem9uLWxpbnV4LWV4dHJhcyBpbnN0YWxsIC15IHJ1YnkyLjQKCmNkIC9ob21lL3NzbS11c2VyCnJ1bnVzZXIgLWwgIHNzbS11c2VyIC1jICdjdXJsIC1vLSBodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vY3JlYXRpb25peC9udm0vdjAuMzIuMC9pbnN0YWxsLnNoIHwgYmFzaCcKcnVudXNlciAtbCAgc3NtLXVzZXIgLWMgJ2V4cG9ydCBOVk1fRElSPSIvaG9tZS9zc20tdXNlci8ubnZtIicKcnVudXNlciAtbCAgc3NtLXVzZXIgLWMgJy4gL2hvbWUvc3NtLXVzZXIvLm52bS9udm0uc2gnCnJ1bnVzZXIgLWwgIHNzbS11c2VyIC1jICdzb3VyY2UgL2hvbWUvc3NtLXVzZXIvLmJhc2hyYycKcnVudXNlciAtbCAgc3NtLXVzZXIgLWMgJ252bSBpbnN0YWxsIHY4LjEwLjAnCgojIGNsb25pbmcgdGhlIHJlcG8KcnVudXNlciAtbCAgc3NtLXVzZXIgLWMgImdpdCBjbG9uZSBodHRwczovL2dpdGh1Yi5jb20vbWFyY29zb3J0aXovYXdzLXNwb3QtaW50ZXJydXB0aW9uLmdpdCIKY2QgL2hvbWUvc3NtLXVzZXIKcnVudXNlciAtbCAgc3NtLXVzZXIgLWMgJ2NwIC9ob21lL3NzbS11c2VyL2F3cy1zcG90LWludGVycnVwdGlvbi9iYWNrZW5kL3BhY2thZ2UqIC9ob21lL3NzbS11c2VyJwpydW51c2VyIC1sICBzc20tdXNlciAtYyAibnBtIGluc3RhbGwiCgojIEluc3RhbGxpbmcgYXdzbG9ncyBhZ2VudAp5dW0gaW5zdGFsbCAteSBhd3Nsb2dzCmNkIC9ob21lL3NzbS11c2VyCmNhdCAvaG9tZS9zc20tdXNlci9hd3Mtc3BvdC1pbnRlcnJ1cHRpb24vYmFja2VuZC9jb25maWcvYXdzbG9ncy5jb25mIHwgc3VkbyB0ZWUgL2V0Yy9hd3Nsb2dzL2F3c2xvZ3MuY29uZgpzdWRvIHN5c3RlbWN0bCBzdGFydCBhd3Nsb2dzZAoKIyBpbnN0YWxsIGFuZCBydW4gdGhlIHdhdGNoZG9nCmNkIC9ob21lL3NzbS11c2VyCnJ1bnVzZXIgLWwgIHNzbS11c2VyIC1jICdjcCAvaG9tZS9zc20tdXNlci9hd3Mtc3BvdC1pbnRlcnJ1cHRpb24vYmFja2VuZC9zcmMvZWMyL3dhdGNoZG9nLnJiIC9ob21lL3NzbS11c2VyJwpydW51c2VyIC1sICBzc20tdXNlciAtYyAnbm9odXAgcnVieSAuL3dhdGNoZG9nLnJiID4gL2Rldi9udWxsIDI+JjEgJicKCiMgaW5zdGFsbCBhbmQgcnVuIHRoZSBhcHAKY2QgL2hvbWUvc3NtLXVzZXIKcnVudXNlciAtbCAgc3NtLXVzZXIgLWMgJ2NwIC9ob21lL3NzbS11c2VyL2F3cy1zcG90LWludGVycnVwdGlvbi9iYWNrZW5kL3NyYy9lYzIvYXBwLmpzIC9ob21lL3NzbS11c2VyJwpydW51c2VyIC1sICBzc20tdXNlciAtYyAnbm9odXAgbm9kZSAuL2FwcC5qcyA+IC4vYXBwLmxvZyAyPiYxICYn
+                UserData: !Base64 |
+                    #!/bin/bash
+
+                    # update packages
+                    yum update -y
+
+                    # Install git
+                    yum install -y git
+
+                    # installing ruby 2.4
+                    amazon-linux-extras install -y ruby2.4
+
+                    cd /home/ssm-user
+                    runuser -l  ssm-user -c 'curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.32.0/install.sh | bash'
+                    runuser -l  ssm-user -c 'export NVM_DIR="/home/ssm-user/.nvm"'
+                    runuser -l  ssm-user -c '. /home/ssm-user/.nvm/nvm.sh'
+                    runuser -l  ssm-user -c 'source /home/ssm-user/.bashrc'
+                    runuser -l  ssm-user -c 'nvm install v8.10.0'
+
+                    # cloning the repo
+                    runuser -l  ssm-user -c "git clone https://github.com/marcosortiz/aws-spot-interruption.git"
+                    cd /home/ssm-user
+                    runuser -l  ssm-user -c 'cp /home/ssm-user/aws-spot-interruption/backend/package* /home/ssm-user'
+                    runuser -l  ssm-user -c "npm install"
+
+                    # Installing awslogs agent
+                    yum install -y awslogs
+                    cd /home/ssm-user
+                    cat /home/ssm-user/aws-spot-interruption/backend/config/awslogs.conf | sudo tee /etc/awslogs/awslogs.conf
+                    sudo systemctl start awslogsd
+
+                    # install and run the watchdog
+                    cd /home/ssm-user
+                    runuser -l  ssm-user -c 'cp /home/ssm-user/aws-spot-interruption/backend/src/ec2/watchdog.rb /home/ssm-user'
+                    runuser -l  ssm-user -c 'nohup ruby ./watchdog.rb > /dev/null 2>&1 &'
+
+                    # install and run the app
+                    cd /home/ssm-user
+                    runuser -l  ssm-user -c 'cp /home/ssm-user/aws-spot-interruption/backend/src/ec2/app.js /home/ssm-user'
+                    runuser -l  ssm-user -c 'nohup node ./app.js > ./app.log 2>&1 &'
                 TagSpecifications:
                     -
                       ResourceType: instance
