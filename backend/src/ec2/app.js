@@ -47,8 +47,9 @@ setInitialState();
 
 function doWork() {
     if (progress !== null) {
+        progress = Number(progress);
         if (progress < 100) {
-            progress = Number((progress + INC).toFixed(2));
+            progress = (progress + INC).toFixed(2);
             progress = progress > 100 ? 100 : progress;
         } else if (progress >= 100) {
             console.log('%o %s %s %s %d', new Date(), 'PROGRESS', uuid, instanceId, progress);
