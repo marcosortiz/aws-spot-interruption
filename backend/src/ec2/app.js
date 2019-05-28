@@ -55,8 +55,8 @@ function doWork() {
             var now = new Date();
             console.log('%o %s %s %s %d', now, 'PROGRESS', uuid, instanceId, progress);
             console.log('%o %s %s %s %o', now, 'FINISHED_AT', uuid, instanceId, now);
-            process.exit(0);
-            // setInitialState();
+            // process.exit(0);
+            setInitialState();
         }    
     }
 }
