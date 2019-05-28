@@ -52,8 +52,9 @@ function doWork() {
             progress = (progress + INC).toFixed(2);
             progress = progress > 100 ? 100 : progress;
         } else if (progress >= 100) {
-            console.log('%o %s %s %s %d', new Date(), 'PROGRESS', uuid, instanceId, progress);
-            console.log('%o %s %s %s %o', new Date(), 'FINISHED_AT', uuid, instanceId, new Date());
+            var now = new Date();
+            console.log('%o %s %s %s %d', now, 'PROGRESS', uuid, instanceId, progress);
+            console.log('%o %s %s %s %o', now, 'FINISHED_AT', uuid, instanceId, now);
             process.exit(0);
             // setInitialState();
         }    
@@ -76,14 +77,15 @@ const server = net.createServer((c) => {
 
     c.on('data', (chunk) => {
         data = chunk.toString();
-        if(data.trim() == 'stop') {
-            console.log('%o %s %s %s Stopping the app ...', new Date(), 'INFO', uuid, instanceId);
+        if(data.startsWith('{"notifiedAt":')) {
+            var notifiedAt = JSON.parse(data.trim()).notifiedAt
+            var now = new Date();
+            console.log('%o %s %s %s %d', new Date(), 'SAVING_PROGRESS', uuid, instanceId, progress)
+            console.log('%o %s %s %s %s', now, 'NOTIFIED_AT', uuid, instanceId, notifiedAt);
+            c.write('ok');
             clearInterval(workInterval);
             clearInterval(logInterval);
-            console.log('%o %s %s %s %d', new Date(), 'SAVING_PROGRESS', uuid, instanceId, progress)
-            console.log('%o %s %s %s Successfully stopped the app and saved state.', new Date(), 'INFO', uuid, instanceId);
-            c.write('ok');
-
+            process.exit(0);
         } else {
             c.write(`Unknown command: ${chunk}`)
         }

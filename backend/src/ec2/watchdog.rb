@@ -4,6 +4,7 @@ require 'logger'
 require 'net/http'
 require 'socket'
 require 'time'
+require 'json'
 
 LOG_FILE = '/home/ssm-user/watchdog.log'
 STOP_MSG = 'stop'
@@ -13,14 +14,15 @@ PORT = 8124
     "#{datetime.strftime('%Y-%m-%dT%H:%M:%S.%6N')} #{severity} #{msg}\n"
 end
 
-def send_stop_msg(ip, port)
+def send_stop_msg(ip, port, time_str)
+    msg = {notifiedAt: time_str}.to_json
     TCPSocket.open(ip, port) {|s|
-        s.send "stop", 0
+        s.send "#{msg}", 0
         resp = s.recv(2)
     }
 end
 
-
+t = nil
 while true do
     @logger.info('No termination notice detected.')
     now = Time.now
@@ -36,5 +38,5 @@ while true do
     end
 end
 
-send_stop_msg('localhost', PORT)
+send_stop_msg('localhost', PORT, t.xmlschema)
 @logger.info "Done saving state. Stopping now. Bye."
