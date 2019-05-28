@@ -1,29 +1,69 @@
 const net = require('net');
 const request = require('sync-request');
 const uuidv4 = require('uuid/v4');
-
-var instanceId = request('GET', 'http://169.254.169.254/latest/meta-data/instance-id').body.toString('utf-8');
+const Lambda = require('aws-sdk/clients/lambda');
+const Config = require('./config.json');
 
 const PORT = 8124
 const COUNTER = 1000000; // 1 Mi
 const WORK_FREQUENCY = 1000;  // ms
 const LOG_FREQUENCY = 15000;  // ms
-const PERIOD = 300;     // seconds
+const PERIOD = 900;     // seconds
 const INC = Number((100/300).toFixed(2));
 
-var progress = 0;
-var uuid = uuidv4();
+try {
+    var instanceId = request('GET', 'http://169.254.169.254/latest/meta-data/instance-id', {timeout: 3000}).body.toString('utf-8');
+} catch (error) {
+    var instanceId = 'i-123456789' // so we can run it locally
+}
+
+var progress = null;
+var uuid = null;
+const setInitialState = function() {
+    progress = null;
+    uuid = null;
+    const lambda = new Lambda({
+        apiVersion: '2015-03-31',
+        region: Config.region,
+    });
+    var params = {
+        FunctionName: Config.functionName,
+        InvocationType: "RequestResponse",
+        Payload: JSON.stringify({sfrId: 'sfr-f4eca55c-67f3-41ca-a092-f530498c6b77'})
+    };
+    lambda.invoke(params, function(err, data) {
+        if(err) {
+            console.log(err);
+        } else {
+            var resp = JSON.parse(data.Payload);
+            uuid = resp.id ? resp.id : uuidv4()
+            progress = resp.progress ? resp.progress : 0
+            console.log('%o %s %s %s %o', new Date(), 'STARTED_AT', uuid, instanceId, new Date());
+            console.log('%o %s %s %s %d', new Date(), 'RESUMED_FROM', uuid, instanceId, progress);
+        }
+    });
+}
+setInitialState();
 
 function doWork() {
-    if (progress < 100) {
-        progress = Number((progress + INC).toFixed(2));
-        progress = progress > 100 ? 100 : progress;
+    if (progress !== null) {
+        if (progress < 100) {
+            progress = Number((progress + INC).toFixed(2));
+            progress = progress > 100 ? 100 : progress;
+        } else if (progress >= 100) {
+            console.log('%o %s %s %s %d', new Date(), 'PROGRESS', uuid, instanceId, progress);
+            console.log('%o %s %s %s %o', new Date(), 'FINISHED_AT', uuid, instanceId, new Date());
+            process.exit(0);
+            // setInitialState();
+        }    
     }
 }
 
 var workInterval = setInterval(doWork, WORK_FREQUENCY);
 var logInterval = setInterval(function () {
-    console.log('%o %s %s %s %d', new Date(), 'PROGRESS', uuid, instanceId, progress);
+    if(progress !== null) {
+        console.log('%o %s %s %s %d', new Date(), 'PROGRESS', uuid, instanceId, progress);
+    }
 }, LOG_FREQUENCY);
 
 const server = net.createServer((c) => {
@@ -60,5 +100,5 @@ server.on('error', (err) => {
 });
 
 server.listen(PORT, () => {
-    console.log('%o %s %s %s TCP listener listening on port 8124', new Date(), 'INFO', uuid, instanceId);
+    console.log('%o %s TCP server listening on port 8124', new Date(), 'INFO');
 });
