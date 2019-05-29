@@ -1,13 +1,13 @@
-require_relative '../ddb/spot_interruption'
+require_relative '../ddb/workload'
 
 
 module Lambda
     class QueryWorkloads
 
-        @@si = Ddb::SpotInterruption.new( table_name: ENV['TABLE_NAME'])
+        @@w = Ddb::Workload.new( table_name: ENV['TABLE_NAME'])
 
         def self.lambda_handler(event:, context:)
-            @@si.getInterruptions(event['sfrId'])
+            @@w.query
         end
         
     end

@@ -44,23 +44,62 @@ Resources:
                         - dynamodb:Scan
                       Resource:
                         - !GetAtt SpotFleetRequestsTable.Arn
-    RecordProgress:
+    # RecordProgress:
+    #     Type: AWS::Serverless::Function
+    #     Properties:
+    #         CodeUri: ./src
+    #         Handler: lambda/record_progress.Lambda::RecordProgress.lambda_handler
+    #         Runtime: ruby2.5
+    #         Environment:
+    #             Variables:
+    #                 INTERRUPTIONS_TABLE_NAME: !Ref SpotInterruptionsTable
+    #                 SFR_TABLE_NAME: !Ref SpotFleetRequestsTable
+    #                 WORKLOADS_QUEUE_URL: !Ref InterruptedSpotWorkloads
+    #         Events:
+    #             ProgressEvent:
+    #                 Type: CloudWatchLogs
+    #                 Properties:
+    #                     LogGroupName: spot-demo-app
+    #                     FilterPattern: "[recorded_at,  level=PROGRESS || level=SAVING_PROGRESS || level=STARTED_AT || level=RESUMED_FROM || level=FINISHED_AT, workloadId, instanceId, value]"
+    #         Policies:
+    #             - AWSLambdaExecute # Managed Policy
+    #             - Version: '2012-10-17' # Policy Document
+    #               Statement:
+    #                 - Effect: Allow
+    #                   Action:
+    #                     - dynamodb:UpdateItem
+    #                   Resource:
+    #                     - !GetAtt SpotInterruptionsTable.Arn
+    #             - Version: '2012-10-17' # Policy Document
+    #               Statement:
+    #                 - Effect: Allow
+    #                   Action:
+    #                     - dynamodb:Scan
+    #                   Resource:
+    #                     - !GetAtt SpotFleetRequestsTable.Arn
+    #             - Version: '2012-10-17' # Policy Document
+    #               Statement:
+    #                 - Effect: Allow
+    #                   Action:
+    #                     - sqs:SendMessage
+    #                   Resource:
+    #                     - !GetAtt InterruptedSpotWorkloads.Arn
+    HandleWorkloadEvents:
         Type: AWS::Serverless::Function
         Properties:
             CodeUri: ./src
-            Handler: lambda/record_progress.Lambda::RecordProgress.lambda_handler
+            Handler: lambda/handle_workload_events.Lambda::HandleWorkloadEvents.lambda_handler
             Runtime: ruby2.5
             Environment:
                 Variables:
-                    INTERRUPTIONS_TABLE_NAME: !Ref SpotInterruptionsTable
-                    SFR_TABLE_NAME: !Ref SpotFleetRequestsTable
-                    WORKLOADS_QUEUE_URL: !Ref InterruptedSpotWorkloads
+                    TABLE_NAME: !Ref SpotWorkloads
+                    QUEUE_URL: !Ref InterruptedSpotWorkloads
             Events:
                 ProgressEvent:
                     Type: CloudWatchLogs
                     Properties:
                         LogGroupName: spot-demo-app
-                        FilterPattern: "[recorded_at,  level=PROGRESS || level=SAVING_PROGRESS || level=STARTED_AT || level=RESUMED_FROM, workloadId, instanceId, value]"
+                        FilterPattern: "[recorded_at,  level=PROGRESS || level=SAVING_PROGRESS || level=STARTED_AT || level=RESUMED_FROM || level=FINISHED_AT || level=NOTIFIED_AT, workloadId, instanceId, value]"
             Policies:
                 - AWSLambdaExecute # Managed Policy
                 - Version: '2012-10-17' # Policy Document
@@ -69,14 +108,7 @@ Resources:
                       Action:
                         - dynamodb:UpdateItem
                       Resource:
-                        - !GetAtt SpotInterruptionsTable.Arn
-                - Version: '2012-10-17' # Policy Document
-                  Statement:
-                    - Effect: Allow
-                      Action:
-                        - dynamodb:Scan
-                      Resource:
-                        - !GetAtt SpotFleetRequestsTable.Arn
+                        - !GetAtt SpotWorkloads.Arn
                 - Version: '2012-10-17' # Policy Document
                   Statement:
                     - Effect: Allow
@@ -113,7 +145,7 @@ Resources:
             Timeout: 15
             Environment:
                 Variables:
-                    TABLE_NAME: !Ref SpotInterruptionsTable
+                    TABLE_NAME: !Ref SpotWorkloads
             Policies:
                 - AWSLambdaExecute # Managed Policy
                 - Version: '2012-10-17' # Policy Document
@@ -121,8 +153,9 @@ Resources:
                     - Effect: Allow
                       Action:
                         - dynamodb:Query
+                        - dynamodb:Scan
                       Resource:
-                        - !GetAtt SpotInterruptionsTable.Arn
+                        - !GetAtt SpotWorkloads.Arn
     SpotFleetRequestsTable:
         Type: AWS::Serverless::SimpleTable
         Properties:
@@ -624,6 +657,18 @@ Resources:
                           - "ec2.amazonaws.com"
                       Action: 
                         - "sts:AssumeRole"
+            Policies:
+                - 
+                    PolicyName: !Sub '${AWS::StackName}-lambda'
+                    PolicyDocument:
+                        Version: '2012-10-17'
+                        Statement:
+                            - 
+                                Effect: Allow
+                                Action:
+                                    - lambda:InvokeFunction
+                                Resource:
+                                    - !GetAtt GetWorkloadInitialState.Arn
             ManagedPolicyArns:
                 - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
     Ec2SsmInstanceProfile:
@@ -641,46 +686,55 @@ Resources:
                     Name: !Ref Ec2SsmInstanceProfile
                 SecurityGroupIds: 
                     - !GetAtt VPC.DefaultSecurityGroup
-                UserData: !Base64 |
-                    #!/bin/bash
+                UserData: 
+                    Fn::Base64: !Sub |
+                        #!/bin/bash
 
-                    # update packages
-                    yum update -y
+                        # update packages
+                        yum update -y
 
-                    # Install git
-                    yum install -y git
+                        # Install git
+                        yum install -y git
 
-                    # installing ruby 2.4
-                    amazon-linux-extras install -y ruby2.4
+                        # installing ruby 2.4
+                        amazon-linux-extras install -y ruby2.4
 
-                    cd /home/ssm-user
-                    runuser -l  ssm-user -c 'curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.32.0/install.sh | bash'
-                    runuser -l  ssm-user -c 'export NVM_DIR="/home/ssm-user/.nvm"'
-                    runuser -l  ssm-user -c '. /home/ssm-user/.nvm/nvm.sh'
-                    runuser -l  ssm-user -c 'source /home/ssm-user/.bashrc'
-                    runuser -l  ssm-user -c 'nvm install v8.10.0'
+                        cd /home/ssm-user
+                        runuser -l  ssm-user -c 'curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.32.0/install.sh | bash'
+                        runuser -l  ssm-user -c 'export NVM_DIR="/home/ssm-user/.nvm"'
+                        runuser -l  ssm-user -c '. /home/ssm-user/.nvm/nvm.sh'
+                        runuser -l  ssm-user -c 'source /home/ssm-user/.bashrc'
+                        runuser -l  ssm-user -c 'nvm install v8.10.0'
 
-                    # cloning the repo
-                    runuser -l  ssm-user -c "git clone https://github.com/marcosortiz/aws-spot-interruption.git"
-                    cd /home/ssm-user
-                    runuser -l  ssm-user -c 'cp /home/ssm-user/aws-spot-interruption/backend/package* /home/ssm-user'
-                    runuser -l  ssm-user -c "npm install"
+                        # cloning the repo
+                        runuser -l  ssm-user -c "git clone https://github.com/marcosortiz/aws-spot-interruption.git"
+                        cd /home/ssm-user
+                        runuser -l  ssm-user -c 'cp /home/ssm-user/aws-spot-interruption/backend/package* /home/ssm-user'
+                        runuser -l  ssm-user -c "npm install"
 
-                    # Installing awslogs agent
-                    yum install -y awslogs
-                    cd /home/ssm-user
-                    cat /home/ssm-user/aws-spot-interruption/backend/config/awslogs.conf | sudo tee /etc/awslogs/awslogs.conf
-                    sudo systemctl start awslogsd
+                        # Installing awslogs agent
+                        yum install -y awslogs
+                        cd /home/ssm-user
+                        cat /home/ssm-user/aws-spot-interruption/backend/config/awslogs.conf | sudo tee /etc/awslogs/awslogs.conf
+                        sudo systemctl start awslogsd
 
-                    # install and run the watchdog
-                    cd /home/ssm-user
-                    runuser -l  ssm-user -c 'cp /home/ssm-user/aws-spot-interruption/backend/src/ec2/watchdog.rb /home/ssm-user'
-                    runuser -l  ssm-user -c 'nohup ruby ./watchdog.rb > /dev/null 2>&1 &'
+                        # install and run the watchdog
+                        cd /home/ssm-user
+                        runuser -l  ssm-user -c 'cp /home/ssm-user/aws-spot-interruption/backend/src/ec2/watchdog.rb /home/ssm-user'
+                        runuser -l  ssm-user -c 'nohup ruby ./watchdog.rb > /dev/null 2>&1 &'
 
-                    # install and run the app
-                    cd /home/ssm-user
-                    runuser -l  ssm-user -c 'cp /home/ssm-user/aws-spot-interruption/backend/src/ec2/app.js /home/ssm-user'
-                    runuser -l  ssm-user -c 'nohup node ./app.js > ./app.log 2>&1 &'
+                        # install and run the app
+                        cd /home/ssm-user
+                        cat << EOL | sudo tee /home/ssm-user/config.json
+                        {
+                            "region": "${AWS::Region}",
+                            "functionName": "${GetWorkloadInitialState.Arn}"
+                        }
+                        EOL
+                        chown ssm-user /home/ssm-user/config.json
+                        chgrp ssm-user /home/ssm-user/config.json
+                        runuser -l  ssm-user -c 'cp /home/ssm-user/aws-spot-interruption/backend/src/ec2/app.js /home/ssm-user'
+                        runuser -l  ssm-user -c 'nohup node ./app.js > ./app.log 2>&1 &'
                 TagSpecifications:
                     -
                       ResourceType: instance

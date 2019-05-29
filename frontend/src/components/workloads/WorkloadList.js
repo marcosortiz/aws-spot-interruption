@@ -20,26 +20,66 @@ class WorkloadList extends React.Component {
         }
     }
 
+    getResumedFrom(w) {
+        if (w.resumedFrom !== '0') {
+            return (
+                <td data-label="Resumed From">
+                    <div className="ui horizontal blue label">
+                        {w.resumedFrom}
+                    </div>
+                </td>
+            );
+        } else {
+            return(
+                <td data-label="Resumed From">
+                    <div className="ui horizontal label">
+                        N/A
+                    </div>
+                </td>
+            );
+        }
+    }
+
+    getFinishedAt(w) {
+        if(w.notifiedAt) {
+            return(
+                <td data-label="Finished At">
+                    <div className="ui horizontal red label">
+                        {w.notifiedAt}
+                    </div>
+                </td>
+            );
+        } else {
+            return(
+                <td data-label="Finished At">
+                    <div className="ui horizontal label">
+                        {w.finishedAt}
+                    </div>
+                </td>
+            );
+        }
+    }
+
     renderContent() {
         return (
             <div>
                 <table className="ui celled table">
                     <thead>
                         <tr>
-                            <th>Workload Id</th>
+                            <th>Started At</th>
                             <th>Instance Id</th>
                             <th>Resumed From</th>
                             <th>Progress</th>
-                            <th>Notified At</th>
+                            <th>Finished At</th>
                         </tr>
                     </thead>
                     <tbody>
                         {this.props.workloads.map(w => {
                             return (
-                                <tr key={w.instanceId} className={(w.notifiedAt && w.progress !== '100') ? 'error' : ''}>
-                                    <td data-label="Workload Id">
-                                        <div className="ui horizontal label blue">
-                                            {w.workloadId}
+                                <tr key={`${w.startedAt}`} className={(w.notifiedAt && w.progress !== '100') ? 'error' : ''}>
+                                    <td data-label="Started At">
+                                        <div className="ui horizontal blue label">
+                                            {w.startedAt}
                                         </div>
                                     </td>
                                     <td data-label="Instance Id">
@@ -47,19 +87,11 @@ class WorkloadList extends React.Component {
                                             {w.instanceId}
                                         </div>
                                     </td>
-                                    <td data-label="Resumed From">
-                                        <div className="ui horizontal label">
-                                            {w.resumedFrom ? w.resumedFrom : 'N/A'}
-                                        </div>
-                                    </td>
+                                    {this.getResumedFrom(w)}
                                     <td data-label="Progress">
                                         {this.getProgress(w)}
                                     </td>
-                                    <td data-label="Notified At">
-                                        <div className={`ui horizontal ${(w.notifiedAt && w.progress !== '100') ? 'red' : ''} label`}>
-                                            {w.notifiedAt ? w.notifiedAt : 'N/A'}
-                                        </div>
-                                    </td>
+                                    {this.getFinishedAt(w)}
                                 </tr>
                             )
                         })}
