@@ -1,6 +1,5 @@
 const net = require('net');
 const request = require('sync-request');
-const uuidv4 = require('uuid/v4');
 const Lambda = require('aws-sdk/clients/lambda');
 const Config = require('./config.json');
 
@@ -29,14 +28,15 @@ const setInitialState = function() {
     var params = {
         FunctionName: Config.functionName,
         InvocationType: "RequestResponse",
-        Payload: JSON.stringify({sfrId: 'sfr-f4eca55c-67f3-41ca-a092-f530498c6b77'})
+        Payload: JSON.stringify()
     };
     lambda.invoke(params, function(err, data) {
         if(err) {
             console.log(err);
         } else {
+            var now = new Date();
             var resp = JSON.parse(data.Payload);
-            uuid = resp.id ? resp.id : uuidv4()
+            uuid = resp.id ? resp.id : `${now.getTime()}${instanceId}`;
             progress = resp.progress ? resp.progress : 0
             console.log('%o %s %s %s %o', new Date(), 'STARTED_AT', uuid, instanceId, new Date());
             console.log('%o %s %s %s %d', new Date(), 'RESUMED_FROM', uuid, instanceId, progress);

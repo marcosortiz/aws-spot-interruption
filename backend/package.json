@@ -8,8 +8,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.463.0",
-    "sync-request": "^6.1.0",
-    "uuid": "^3.3.2"
+    "sync-request": "^6.1.0"
   },
   "devDependencies": {},
   "scripts": {
