@@ -23,7 +23,6 @@ class WorkloadsPage extends React.Component {
                 _this.setState( {error: err, loading: false} );
             } else {
                 var workloads = JSON.parse(data.Payload);
-                console.log(workloads);
                 _this.setState({
                     loading: false,
                     workloads: workloads
@@ -34,6 +33,11 @@ class WorkloadsPage extends React.Component {
 
     componentDidMount() {
         this.searchWorkloads();
+        this.interval = setInterval(() => this.searchWorkloads(), 15000);
+    }
+
+    componentWillUnmount() {
+        clearInterval(this.interval);
     }
 
     onRefreshSubmit = ()  => {

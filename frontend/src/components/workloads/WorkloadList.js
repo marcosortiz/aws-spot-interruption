@@ -1,5 +1,5 @@
 import React from 'react';
-import { Progress } from 'semantic-ui-react'
+import { Icon, Popup, Progress } from 'semantic-ui-react'
 
 class WorkloadList extends React.Component {
 
@@ -44,6 +44,9 @@ class WorkloadList extends React.Component {
         if(w.notifiedAt) {
             return(
                 <td data-label="Finished At">
+                    <Popup content='Notified At' trigger={<Icon name='warning circle' />} />
+                    
+                    
                     <div className="ui horizontal red label">
                         {w.notifiedAt}
                     </div>
@@ -53,7 +56,7 @@ class WorkloadList extends React.Component {
             return(
                 <td data-label="Finished At">
                     <div className="ui horizontal label">
-                        {w.finishedAt}
+                        {w.finishedAt || 'N/A'}
                     </div>
                 </td>
             );
@@ -76,7 +79,7 @@ class WorkloadList extends React.Component {
                     <tbody>
                         {this.props.workloads.map(w => {
                             return (
-                                <tr key={`${w.startedAt}`} className={(w.notifiedAt && w.progress !== '100') ? 'error' : ''}>
+                                <tr key={`${w.id}`} className={(w.notifiedAt && w.progress !== '100') ? 'error' : ''}>
                                     <td data-label="Started At">
                                         <div className="ui horizontal blue label">
                                             {w.startedAt}

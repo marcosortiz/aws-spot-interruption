@@ -44,46 +44,6 @@ Resources:
                         - dynamodb:Scan
                       Resource:
                         - !GetAtt SpotFleetRequestsTable.Arn
-    # RecordProgress:
-    #     Type: AWS::Serverless::Function
-    #     Properties:
-    #         CodeUri: ./src
-    #         Handler: lambda/record_progress.Lambda::RecordProgress.lambda_handler
-    #         Runtime: ruby2.5
-    #         Environment:
-    #             Variables:
-    #                 INTERRUPTIONS_TABLE_NAME: !Ref SpotInterruptionsTable
-    #                 SFR_TABLE_NAME: !Ref SpotFleetRequestsTable
-    #                 WORKLOADS_QUEUE_URL: !Ref InterruptedSpotWorkloads
-    #         Events:
-    #             ProgressEvent:
-    #                 Type: CloudWatchLogs
-    #                 Properties:
-    #                     LogGroupName: spot-demo-app
-    #                     FilterPattern: "[recorded_at,  level=PROGRESS || level=SAVING_PROGRESS || level=STARTED_AT || level=RESUMED_FROM || level=FINISHED_AT, workloadId, instanceId, value]"
-    #         Policies:
-    #             - AWSLambdaExecute # Managed Policy
-    #             - Version: '2012-10-17' # Policy Document
-    #               Statement:
-    #                 - Effect: Allow
-    #                   Action:
-    #                     - dynamodb:UpdateItem
-    #                   Resource:
-    #                     - !GetAtt SpotInterruptionsTable.Arn
-    #             - Version: '2012-10-17' # Policy Document
-    #               Statement:
-    #                 - Effect: Allow
-    #                   Action:
-    #                     - dynamodb:Scan
-    #                   Resource:
-    #                     - !GetAtt SpotFleetRequestsTable.Arn
-    #             - Version: '2012-10-17' # Policy Document
-    #               Statement:
-    #                 - Effect: Allow
-    #                   Action:
-    #                     - sqs:SendMessage
-    #                   Resource:
-    #                     - !GetAtt InterruptedSpotWorkloads.Arn
     HandleWorkloadEvents:
         Type: AWS::Serverless::Function
         Properties:
@@ -189,16 +149,10 @@ Resources:
                 - 
                     AttributeName: id
                     AttributeType: S
-                - 
-                    AttributeName: instanceId
-                    AttributeType: S
             KeySchema: 
                 - 
                     AttributeName: id
                     KeyType: HASH
-                - 
-                    AttributeName: instanceId
-                    KeyType: RANGE
             ProvisionedThroughput:
                 ReadCapacityUnits: 1
                 WriteCapacityUnits: 1

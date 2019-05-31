@@ -36,7 +36,6 @@ const setInitialState = function() {
         } else {
             var now = new Date();
             var resp = JSON.parse(data.Payload);
-            // uuid = resp.id ? resp.id : `${now.getTime()}${instanceId}`;
             uuid = `${now.getTime()}${instanceId}`;
             progress = resp.progress ? resp.progress : 0
             console.log('%o %s %s %s %o', new Date(), 'STARTED_AT', uuid, instanceId, new Date());

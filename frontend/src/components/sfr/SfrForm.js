@@ -92,7 +92,7 @@ class SfrForm extends React.Component {
                                     <label>New Target Capacity:</label>
                                     <div className="ui input">
                                         <input type="number" name="new-target-capacity" 
-                                            min="0" max="3" placeholder="0" 
+                                            min="0" max="1" placeholder="0" 
                                             defaultValue={this.props.newTargetCapacity}
                                             onChange={this.onNewTargetCapacityChange}
                                         />

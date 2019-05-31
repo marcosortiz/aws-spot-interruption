@@ -44,6 +44,11 @@ class HistoryPage extends React.Component {
 
     componentDidMount() {
         this.search(this.props.sfrId);
+        this.interval = setInterval(() => this.search(this.props.sfrId), 15000);
+    }
+    
+    componentWillUnmount() {
+        clearInterval(this.interval);
     }
 
     renderContent() {

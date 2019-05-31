@@ -23,17 +23,18 @@ module Ddb
             resp = @client.update_item({
                 expression_attribute_names: {
                     "#SA" => "startedAt",
+                    "#II" => "instanceId",
                 },
                 expression_attribute_values: {
                     ":sa" => params['value'],
+                    ":ii" => params['instanceId'],
                 },
                 key: {
                     "id" => params['workloadId'],
-                    "instanceId" => params['instanceId'],
                 },
                 return_values: "ALL_NEW",
                 table_name: @table_name,
-                update_expression: "SET #SA = :sa",
+                update_expression: "SET #SA = :sa, #II = :ii",
             })
         end
 
@@ -41,17 +42,18 @@ module Ddb
             resp = @client.update_item({
                 expression_attribute_names: {
                     "#RF" => "resumedFrom",
+                    "#II" => "instanceId",
                 },
                 expression_attribute_values: {
                     ":rf" => params['value'],
+                    ":ii" => params['instanceId'],
                 },
                 key: {
                     "id" => params['workloadId'],
-                    "instanceId" => params['instanceId'],
                 },
                 return_values: "ALL_NEW",
                 table_name: @table_name,
-                update_expression: "SET #RF = :rf",
+                update_expression: "SET #RF = :rf, #II = :ii",
             })
         end
 
@@ -59,17 +61,18 @@ module Ddb
             resp = @client.update_item({
                 expression_attribute_names: {
                     "#P" => "progress",
+                    "#II" => "instanceId",
                 }, 
                 expression_attribute_values: {
                     ":p" => params['value'],
+                    ":ii" => params['instanceId'],
                 }, 
                 key: {
                     "id" => params['workloadId'],
-                    "instanceId" => params['instanceId'],
                 }, 
                 return_values: "ALL_NEW", 
                 table_name: @table_name,
-                update_expression: "SET #P = :p", 
+                update_expression: "SET #P = :p, #II = :ii", 
             })
         end
 
@@ -80,19 +83,20 @@ module Ddb
             resp = @client.update_item({
                 expression_attribute_names: {
                     "#NA" => "notifiedAt",
-                    "#MD"  => "metadataDelay"
+                    "#MD"  => "metadataDelay",
+                    "#II" => "instanceId",
                 }, 
                 expression_attribute_values: {
-                    ":na" => params['value'],
+                    ":na" => notified_at.utc.xmlschema,
                     ":md" => delay.to_s,
+                    ":ii" => params['instanceId'],
                 }, 
                 key: {
                     "id" => params['workloadId'],
-                    "instanceId" => params['instanceId'],
                 }, 
                 return_values: "ALL_NEW", 
                 table_name: @table_name,
-                update_expression: "SET #NA = :na, #MD = :md", 
+                update_expression: "SET #NA = :na, #MD = :md, #II = :ii", 
             })
         end
 
@@ -100,26 +104,27 @@ module Ddb
             resp = @client.update_item({
                 expression_attribute_names: {
                     "#FA" => "finishedAt",
+                    "#II" => "instanceId",
                 },
                 expression_attribute_values: {
                     ":fa" => params['value'],
+                    ":ii" => params['instanceId'],
                 },
                 key: {
                     "id" => params['workloadId'],
-                    "instanceId" => params['instanceId'],
                 },
                 return_values: "ALL_NEW",
                 table_name: @table_name,
-                update_expression: "SET #FA = :fa",
+                update_expression: "SET #FA = :fa, #II = :ii",
             })
         end
 
         def query
             resp = @client.scan({
-                table_name: @table_name, 
+                table_name: @table_name,
             })
 
-            resp.items
+            resp.items.sort_by { |h| h['id'] }
         end
 
     end
