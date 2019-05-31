@@ -1,7 +1,6 @@
 require 'json'
 require 'aws-sdk-sqs'
 
-
 module Sqs
     class Workloads
 
