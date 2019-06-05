@@ -4,7 +4,7 @@ var path = require('path');
 var AWS            = require('aws-sdk/global');
 var Cloudformation = require('aws-sdk/clients/cloudformation');
 
-const BACKEND_CONFIG_FILE_PATH = path.normalize(`${path.resolve(__dirname)}/../../backend/config/config.json`);
+const BACKEND_CONFIG_FILE_PATH = path.normalize(`${path.resolve(__dirname)}/../../config/config.json`);
 const FRONTEND_CONFIG_FILE_PATH = path.normalize(`${path.resolve(__dirname)}/../src/config/config.json`);
 const KEYS = [
     'IdentityPoolId',
