@@ -1,6 +1,10 @@
 import React from 'react';
 import Amplify from 'aws-amplify';
-import {withAuthenticator} from 'aws-amplify-react';
+import {withAuthenticator, Greetings, SignIn, RequireNewPassword, ConfirmSignIn, VerifyContact, ForgotPassword} from 'aws-amplify-react';
+
+
+
+
 import SfrPage from './sfr/SfrPage';
 import Config from '../config';
 
@@ -28,5 +32,11 @@ Amplify.configure({
     }
 });
 
-
-export default withAuthenticator(App, true);
+export default withAuthenticator(App, true, [
+    <Greetings />,
+    <SignIn />,
+    <RequireNewPassword/>,
+    <ConfirmSignIn />,
+    <VerifyContact />,
+    <ForgotPassword />
+  ])
