@@ -2,9 +2,9 @@
 
 # Load config
 mydir="${0%/*}"
-REGION=$(cat "$mydir"/config.json | jq -r '.region')
-S3_BUCKET=$(cat "$mydir"/config.json | jq -r '.samS3BucketName')
-CFN_STACK_NAME_PREFIX=$(cat "$mydir"/config.json | jq -r '.cloudformationStackNamePrefix')
+REGION=$(cat "$mydir"/../config/config.json | jq -r '.region')
+S3_BUCKET=$(cat "$mydir"/../config/config.json | jq -r '.samS3BucketName')
+CFN_STACK_NAME_PREFIX=$(cat "$mydir"/../config/config.json | jq -r '.cloudformationStackNamePrefix')
 
 # # Execute sam commands to deploy the package
 aws s3 mb s3://$S3_BUCKET

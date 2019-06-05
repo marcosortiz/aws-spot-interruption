@@ -36,3 +36,4 @@ frontend/yarn-error.log*
 
 # ----- Backend -----
 backend/src/ec2/config.json
+backend/config/config.json
