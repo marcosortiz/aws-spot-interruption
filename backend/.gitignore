@@ -1,6 +1,0 @@
-# ----- AWS SAM -----
-packaged.yaml
-.aws-sam
-
-# ----- Ruby -----
-.bundle
