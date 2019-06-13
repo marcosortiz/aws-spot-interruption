@@ -25,17 +25,19 @@ var region = null;
 var stackName = null;
 
 function getRegion() {
-    if (region === null) {
-        var data =  fs.readFileSync(BACKEND_CONFIG_FILE_PATH, 'UTF8');
+    region = process.env.BACKEND_REGION;
+    if (region == null) {
+        var data = fs.readFileSync(BACKEND_CONFIG_FILE_PATH, 'UTF8');
         region = JSON.parse(data).region;
     }
     return region;
 }
 
 function getBackendStackName() {
-    if (stackName === null) {
+    stackName = process.env.CFN_STACK_NAME;
+    if (stackName == null) {
         var data =  fs.readFileSync(BACKEND_CONFIG_FILE_PATH, 'UTF8');
-        stackName = JSON.parse(data).cloudformationStackNamePrefix;
+        stackName = JSON.parse(data).cloudformationStackName;
     }
     return stackName;
 }

@@ -1,6 +1,6 @@
 {
     "region": "us-east-1",
     "samS3BucketName": "spot-demo-sam",
-    "cloudformationStackNamePrefix": "spot-demo-app",
+    "cloudformationStackName": "spot-demo-app",
     "s3BucketName": "spotdemo.aws.ormarcos.com"
 }

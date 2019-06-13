@@ -211,7 +211,7 @@ Resources:
             RefreshTokenValidity: 200
             UserPoolId: !Ref SpotDemoUserPool
     SpotDemoIdentityPool:
-        Type: "AWS::Cognito::IdentityPool"
+        Type: AWS::Cognito::IdentityPool
         Properties:
             AllowUnauthenticatedIdentities: false
             CognitoIdentityProviders:
@@ -219,7 +219,7 @@ Resources:
                     ClientId: !Ref UserPoolClient
                     ProviderName: !GetAtt SpotDemoUserPool.ProviderName
     SpotDemoIdentityPoolAuthRole:
-        Type: "AWS::IAM::Role"
+        Type: AWS::IAM::Role
         Properties:
             AssumeRolePolicyDocument:
                 Version: "2012-10-17"
@@ -701,6 +701,49 @@ Resources:
                         - Key: volume
                           Value: spot-demo-instance
             LaunchTemplateName: spot-demo-lt
+    FrontEndDistributionIdentity:
+        Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+        Properties:
+            CloudFrontOriginAccessIdentityConfig:
+                Comment: spot-demo-identity
+    FrontEndDistribution:
+        Type: AWS::CloudFront::Distribution
+        Properties:
+            DistributionConfig:
+                Enabled: true
+                DefaultRootObject: index.html
+                Origins:
+                    - DomainName: !GetAtt WebsiteBucket.DomainName
+                      Id: !Ref WebsiteBucket
+                      S3OriginConfig:
+                        OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${FrontEndDistributionIdentity}
+                DefaultCacheBehavior:
+                    AllowedMethods:
+                        - GET
+                        - HEAD
+                    TargetOriginId: !Ref WebsiteBucket
+                    ForwardedValues:
+                        QueryString: false
+                        Cookies:
+                            Forward: none
+                    ViewerProtocolPolicy: allow-all
+    WebsiteBucket:
+        Type: AWS::S3::Bucket
+    BucketPolicy:
+        Type: AWS::S3::BucketPolicy
+        Properties:
+            Bucket: !Ref WebsiteBucket
+            PolicyDocument:
+                Version: '2012-10-17'
+                Id: PolicyForCloudFrontPrivateContent
+                Statement:
+                    - 
+                        Effect: Allow
+                        Principal:
+                            CanonicalUser:
+                                Fn::GetAtt: [ FrontEndDistributionIdentity , S3CanonicalUserId ]
+                        Action: s3:GetObject
+                        Resource: !Sub "${WebsiteBucket.Arn}/*"
 
 Outputs:
     UserPoolId:
@@ -739,3 +782,9 @@ Outputs:
     QueryWorkloadsFunctionArn:
         Description: The Arn of the lambda function that queries existing workloads
         Value: !GetAtt QueryWorkloads.Arn
+    WebsiteBucket:
+        Description: The frontend website url
+        Value: !GetAtt WebsiteBucket.DomainName
+    FrontEndDistribution:
+        Description: The frontend cloudFront distribution domain name
+        Value: !GetAtt FrontEndDistribution.DomainName

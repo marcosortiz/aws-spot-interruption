@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Blablabla
+# Parameters:
+#     gitRepoUrl:
+#         Type: String
+#         Description: A valid publig git repo url
+#     stackNamePrefix:
+#         Type: String
+#         Default: spot-demo
+#         Description: The CloudFormation stack name prefix.
+Resources:
+    SamBucket:
+        Type: AWS::S3::Bucket
+    CodeBuildRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Statement:
+                    - 
+                        Effect: Allow
+                        Action: sts:AssumeRole
+                        Principal:
+                            Service: codebuild.amazonaws.com
+            Path: /
+            Policies:
+                - 
+                    PolicyName: !Sub '${AWS::StackName}-cwlogs'
+                    PolicyDocument:
+                        Version: '2012-10-17'
+                        Statement:
+                            - 
+                                Effect: Allow
+                                Action:
+                                    - logs:CreateLogGroup
+                                    - logs:CreateLogStream
+                                    - logs:PutLogEvents
+                                Resource: '*'
+    Project:
+        Type: AWS::CodeBuild::Project
+        Properties:
+            Name: !Sub '${AWS::StackName}'
+            Description: Spot demo build project that will deploy the frontend and backend via cloudformation.
+            ServiceRole: !GetAtt CodeBuildRole.Arn
+            Source:
+                Type: NO_SOURCE
+                BuildSpec: |
+                    version: 0.2
+                    phases:
+                        install:
+                            runtime-versions:
+                                nodejs: 8
+                            commands:
+                                - apt-get update -y
+                                - apt-get install -y git
+                                - apt-get install -y jq
+                        pre_build:
+                            commands:
+                                - pip install --upgrade pip
+                                - pip install --user aws-sam-cli
+                                - USER_BASE_PATH=$(python -m site --user-base)
+                                - export PATH=$PATH:$USER_BASE_PATH/bin
+                        build:
+                            commands:
+                                - git clone https://github.com/marcosortiz/aws-iot-core-acmebots-monitoring.git
+                                - cd aws-iot-core-acmebots-monitoring
+
+            Artifacts:
+                Type: NO_ARTIFACTS
+            Environment:
+                Type: LINUX_CONTAINER
+                ComputeType: BUILD_GENERAL1_SMALL
+                Image: aws/codebuild/standard:latest
+                EnvironmentVariables:
+                    - Name: varName
+                      Value: varValue
+            TimeoutInMinutes: 30
+            Tags:
+                - Key: stack
+                  Value: spot-demo
+Outputs:
+    WebsiteBucket:
+        Description: The S3 bucket that will hold the aws sam package created by CodeBuild.
+        Value: !Ref SamBucket
