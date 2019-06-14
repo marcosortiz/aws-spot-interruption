@@ -635,6 +635,21 @@ Resources:
         Properties : 
             Roles : 
                 - !Ref Ec2SsmRole
+    IamFleetRole:
+        Type: AWS::IAM::Role
+        Properties : 
+            AssumeRolePolicyDocument: 
+                Version: "2012-10-17"
+                Statement: 
+                    - 
+                      Effect: Allow
+                      Principal: 
+                        Service: 
+                          - spotfleet.amazonaws.com
+                      Action: 
+                        - sts:AssumeRole
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
     SpotDemoLaunchTemplate:
         Type: AWS::EC2::LaunchTemplate
         Properties:
@@ -793,3 +808,6 @@ Outputs:
     FrontEndDistribution:
         Description: The frontend cloudFront distribution domain name
         Value: !GetAtt FrontEndDistribution.DomainName
+    IamFleetRole:
+        Description: The IAM role used on the spot fleet request.
+        Value: !GetAtt IamFleetRole.Arn

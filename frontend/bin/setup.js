@@ -63,9 +63,9 @@ function getLtConfigsOverrides(params={}) {
     });
     return a;
 }
-function getSpotFleetRequestConfig(params={}) {
+function getSpotFleetRequestConfig(IamFleetRole, params={}) {
     var config = {
-        IamFleetRole: 'arn:aws:iam::369233778488:role/aws-ec2-spot-fleet-tagging-role',
+        IamFleetRole: IamFleetRole,
         AllocationStrategy: 'lowestPrice',
         TargetCapacity: 0,
         TerminateInstancesWithExpiration: true,
@@ -113,7 +113,8 @@ function fetchConfig(keys, outputs) {
                     find(outputs, 'PrivateSubnet3')
                 ]
             }
-            var sfrConfig = getSpotFleetRequestConfig(params);
+            var IamFleetRole = find(outputs, 'IamFleetRole');
+            var sfrConfig = getSpotFleetRequestConfig(IamFleetRole, params);
             config['SpotFleetRequestConfig'] = sfrConfig;
             var content = JSON.stringify(config, null, 4);
             fs.writeFileSync(FRONTEND_CONFIG_FILE_PATH, content);
