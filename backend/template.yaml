@@ -7,6 +7,17 @@ Parameters:
         Default: ormarcos@amazon.com
         Description: A valid email address is required
 
+Mappings: 
+    AmazonLinux2ImageMap: 
+        us-east-1:
+            HVM64: ami-0c6b1d09930fac512
+        us-east-2:
+            HVM64: ami-0ebbf2179e615c338
+        us-west-1:
+            HVM64: ami-015954d5e5548d13b
+        eu-west-2:
+            HVM64: ami-0cb72367e98845d43
+
 Resources: 
     HandleSpotNotification:
         Type: AWS::Serverless::Function
@@ -655,7 +666,7 @@ Resources:
         Type: AWS::EC2::LaunchTemplate
         Properties:
             LaunchTemplateData:
-                ImageId: ami-0de53d8956e8dcf80
+                ImageId: !FindInMap [AmazonLinux2ImageMap, !Ref "AWS::Region", HVM64]
                 InstanceType: t2.medium
                 IamInstanceProfile:
                     Name: !Ref Ec2SsmInstanceProfile
