@@ -7,7 +7,7 @@ S3_SAM_BUCKET=${SAM_BUCKET:-$(cat "$mydir"/../../config/config.json | jq -r '.sa
 CFN_STACK_NAME=${STACK_NAME:-$(cat "$mydir"/../../config/config.json | jq -r '.cloudformationStackName')}
 
 # Execute sam commands to deploy the package
-aws s3 mb s3://$S3_SAM_BUCKET
+aws s3 mb s3://$S3_SAM_BUCKET --region $BACKEND_REGION
 sam build
 sam package --template-file template.yaml --output-template-file packaged.yaml --s3-bucket $S3_SAM_BUCKET --region $BACKEND_REGION
 sam deploy --template-file packaged.yaml --stack-name $CFN_STACK_NAME --capabilities CAPABILITY_NAMED_IAM --region $BACKEND_REGION
