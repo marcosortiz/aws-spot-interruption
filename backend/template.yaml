@@ -647,6 +647,7 @@ Resources:
                                     - !GetAtt GetWorkloadInitialState.Arn
             ManagedPolicyArns:
                 - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+                - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
     Ec2SsmInstanceProfile:
         Type: AWS::IAM::InstanceProfile
         Properties : 
@@ -704,10 +705,11 @@ Resources:
                         runuser -l  ssm-user -c "npm install"
 
                         # Installing awslogs agent
-                        yum install -y awslogs
                         cd /home/ssm-user
-                        cat /home/ssm-user/aws-spot-interruption/backend/config/awslogs.conf | sudo tee /etc/awslogs/awslogs.conf
-                        sudo systemctl start awslogsd
+                        wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+                        rpm -U ./amazon-cloudwatch-agent.rpm
+                        cat /home/ssm-user/aws-spot-interruption/backend/config/cw-agent.json | sudo tee /home/ssm-user/cw-agent.json
+                        amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/home/ssm-user/cw-agent.json -s
 
                         # install and run the watchdog
                         cd /home/ssm-user
@@ -738,49 +740,6 @@ Resources:
                         - Key: volume
                           Value: spot-demo-instance
             LaunchTemplateName: spot-demo-lt
-    FrontEndDistributionIdentity:
-        Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
-        Properties:
-            CloudFrontOriginAccessIdentityConfig:
-                Comment: spot-demo-identity
-    FrontEndDistribution:
-        Type: AWS::CloudFront::Distribution
-        Properties:
-            DistributionConfig:
-                Enabled: true
-                DefaultRootObject: index.html
-                Origins:
-                    - DomainName: !GetAtt WebsiteBucket.DomainName
-                      Id: !Ref WebsiteBucket
-                      S3OriginConfig:
-                        OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${FrontEndDistributionIdentity}
-                DefaultCacheBehavior:
-                    AllowedMethods:
-                        - GET
-                        - HEAD
-                    TargetOriginId: !Ref WebsiteBucket
-                    ForwardedValues:
-                        QueryString: false
-                        Cookies:
-                            Forward: none
-                    ViewerProtocolPolicy: allow-all
-    WebsiteBucket:
-        Type: AWS::S3::Bucket
-    BucketPolicy:
-        Type: AWS::S3::BucketPolicy
-        Properties:
-            Bucket: !Ref WebsiteBucket
-            PolicyDocument:
-                Version: '2012-10-17'
-                Id: PolicyForCloudFrontPrivateContent
-                Statement:
-                    - 
-                        Effect: Allow
-                        Principal:
-                            CanonicalUser:
-                                Fn::GetAtt: [ FrontEndDistributionIdentity , S3CanonicalUserId ]
-                        Action: s3:GetObject
-                        Resource: !Sub "${WebsiteBucket.Arn}/*"
 
 Outputs:
     UserPoolId:
@@ -819,12 +778,6 @@ Outputs:
     QueryWorkloadsFunctionArn:
         Description: The Arn of the lambda function that queries existing workloads
         Value: !GetAtt QueryWorkloads.Arn
-    WebsiteBucket:
-        Description: The frontend website url
-        Value: !GetAtt WebsiteBucket.DomainName
-    FrontEndDistribution:
-        Description: The frontend cloudFront distribution domain name
-        Value: !GetAtt FrontEndDistribution.DomainName
     IamFleetRole:
         Description: The IAM role used on the spot fleet request.
         Value: !GetAtt IamFleetRole.Arn
