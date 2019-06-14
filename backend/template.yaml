@@ -15,7 +15,7 @@ Mappings:
             HVM64: ami-0ebbf2179e615c338
         us-west-1:
             HVM64: ami-015954d5e5548d13b
-        eu-west-2:
+        us-west-2:
             HVM64: ami-0cb72367e98845d43
 
 Resources: 
