@@ -273,15 +273,16 @@ Resources:
                             - 
                                 Effect: Allow
                                 Action:
-                                    - iam:ListRoles
-                                    - iam:PassRole
-                                    - iam:ListInstanceProfiles
                                     - iam:AddRoleToInstanceProfile
                                     - iam:AttachRolePolicy
                                     - iam:CreateInstanceProfile
                                     - iam:CreateRole
+                                    - iam:CreateServiceLinkedRole
                                     - iam:GetRole
+                                    - iam:ListInstanceProfiles
                                     - iam:ListPolicies
+                                    - iam:ListRoles
+                                    - iam:PassRole
                                 Resource: '*'
                 - 
                     PolicyName: !Sub '${AWS::StackName}-ddb'
