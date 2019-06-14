@@ -60,6 +60,11 @@ Resources:
         Properties: 
             LogGroupName: spot-demo-app
             RetentionInDays: 5
+    WatchdogLogGroup:
+        Type: AWS::Logs::LogGroup
+        Properties: 
+            LogGroupName: spot-demo-watchdog
+            RetentionInDays: 5
     HandleWorkloadEvents:
         Type: AWS::Serverless::Function
         Properties:
