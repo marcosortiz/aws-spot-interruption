@@ -1,0 +1,33 @@
+version: 0.1
+backend:
+  phases:
+    preBuild:
+      commands:
+        - yum -y install jq
+        - export PATH=$PATH:$USER_BASE_PATH/bin
+        - export ACCOUNT_ID=$(aws sts get-caller-identity|jq -r ".Account")
+        - export REGION=$AWS_REGION
+        - export STACK_NAME="spot-demo-app-${ACCOUNT_ID}"
+        - export SAM_BUCKET="${STACK_NAME}-${REGION}-sam"
+        - echo $REGION
+        - echo $SAM_BUCKET
+        - echo $STACK_NAME
+    build:
+      commands:
+        - ./bin/deploy-backend.sh
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd frontend
+    build:
+      commands:
+        - ./bin/build.sh
+  artifacts:
+    baseDirectory: frontend/build
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - /
+      - /index.html
